@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Documentação Completa - Agenda MVP</title>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.45; color: #222; margin: 36px; }
+    h1, h2, h3 { color: #111; margin-top: 24px; }
+    h1 { font-size: 28px; margin-top: 0; }
+    h2 { font-size: 20px; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+    h3 { font-size: 16px; }
+    p, li { font-size: 12pt; }
+    code { background: #f4f4f4; padding: 1px 4px; border-radius: 4px; }
+    pre { background: #f8f8f8; border: 1px solid #ddd; padding: 10px; overflow: auto; }
+    table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
+    th { background: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h1>Documentação Completa do App - Agenda MVP</h1>
+  <p><strong>Projeto:</strong> Agenda MVP</p>
+  <p><strong>Repositório local:</strong> <code>lash-agenda</code></p>
+  <p><strong>Objetivo:</strong> plataforma de agendamento online para profissionais, com painel administrativo e página pública para clientes.</p>
+
+  <h2>1. Visão Geral do Sistema</h2>
+  <p>O sistema permite que:</p>
+  <ul>
+    <li>a profissional cadastre serviços, configure disponibilidade e bloqueios, acompanhe agendamentos e altere status;</li>
+    <li>a cliente agende online sem login administrativo, escolhendo serviço, data e horário disponível;</li>
+    <li>as regras de negócio evitem conflitos de horário e respeitem agenda de trabalho.</li>
+  </ul>
+
+  <h2>2. Stack Tecnológica</h2>
+  <ul>
+    <li><strong>Frontend:</strong> Next.js 16.2.5 + React 19.2.4 + TypeScript</li>
+    <li><strong>Estilização:</strong> Tailwind CSS v4 + CSS global customizado</li>
+    <li><strong>Backend/Banco/Auth:</strong> Supabase (PostgreSQL + Auth + RLS)</li>
+    <li><strong>Deploy:</strong> Vercel</li>
+  </ul>
+
+  <h2>3. Estrutura de Pastas (Resumo)</h2>
+  <table>
+    <tr><th>Caminho</th><th>Responsabilidade</th></tr>
+    <tr><td><code>app/</code></td><td>Rotas do App Router (públicas e painel)</td></tr>
+    <tr><td><code>app/(dashboard)/professional/*</code></td><td>Painel da profissional</td></tr>
+    <tr><td><code>app/(public)/booking/*</code></td><td>Fluxo público de agendamento</td></tr>
+    <tr><td><code>components/auth/*</code></td><td>Login, proteção de rota e logout</td></tr>
+    <tr><td><code>components/professional/*</code></td><td>Módulos do painel (serviços, agenda, dashboard, etc.)</td></tr>
+    <tr><td><code>components/public/*</code></td><td>Fluxo de booking público e calendário visual</td></tr>
+    <tr><td><code>lib/supabase/client.ts</code></td><td>Cliente Supabase no frontend</td></tr>
+    <tr><td><code>supabase/sql/mvp_schema.sql</code></td><td>Schema completo do banco (DDL, triggers, RLS, RPC)</td></tr>
+  </table>
+
+  <h2>4. Funcionalidades Implementadas</h2>
+
+  <h3>4.1 Autenticação</h3>
+  <ul>
+    <li>Cadastro da profissional</li>
+    <li>Login com e-mail/senha</li>
+    <li>Reenvio de confirmação de e-mail</li>
+    <li>Logout</li>
+    <li>Proteção de rotas do painel</li>
+  </ul>
+
+  <h3>4.2 Painel da Profissional</h3>
+  <ul>
+    <li><strong>Dashboard:</strong> métricas reais (agendamentos de hoje, serviços ativos, próximos agendamentos)</li>
+    <li><strong>Serviços:</strong> cadastrar, listar, ativar/desativar e excluir</li>
+    <li><strong>Disponibilidade:</strong> cadastrar e gerenciar horários por dia da semana</li>
+    <li><strong>Bloqueios:</strong> bloquear intervalos específicos (data/hora início e fim + motivo)</li>
+    <li><strong>Agenda diária:</strong> visualizar agendamentos por data e alterar status</li>
+    <li><strong>Link público:</strong> geração e cópia do link de agendamento da profissional</li>
+  </ul>
+
+  <h3>4.3 Área da Cliente (Pública)</h3>
+  <ul>
+    <li>Seleção de serviço</li>
+    <li>Calendário visual interativo para escolha de data</li>
+    <li>Listagem de horários disponíveis</li>
+    <li>Formulário de dados da cliente (nome, telefone, e-mail, observações)</li>
+    <li>Confirmação de agendamento</li>
+  </ul>
+
+  <h2>5. Regras de Negócio Implementadas</h2>
+  <ul>
+    <li>Não permitir sobreposição de agendamentos para a mesma profissional (constraint de exclusão com <code>gist</code>)</li>
+    <li>Respeitar duração do serviço na geração de slots</li>
+    <li>Respeitar bloqueios de agenda (<code>blocked_times</code>)</li>
+    <li>Respeitar horários e dias de disponibilidade (<code>availability</code>)</li>
+    <li>Profissional só acessa os próprios dados (RLS)</li>
+    <li>Cliente pode criar agendamento sem login no painel (policy pública de insert em appointments)</li>
+  </ul>
+
+  <h2>6. Banco de Dados (Supabase)</h2>
+  <h3>6.1 Tabelas</h3>
+  <ul>
+    <li><code>profiles</code></li>
+    <li><code>business_settings</code></li>
+    <li><code>services</code></li>
+    <li><code>availability</code></li>
+    <li><code>blocked_times</code></li>
+    <li><code>appointments</code></li>
+  </ul>
+
+  <h3>6.2 Enum</h3>
+  <ul>
+    <li><code>appointment_status</code>: <code>agendado</code>, <code>confirmado</code>, <code>cancelado</code>, <code>concluido</code></li>
+  </ul>
+
+  <h3>6.3 Funções/Triggers principais</h3>
+  <ul>
+    <li><code>handle_new_user()</code>: cria/atualiza profile automaticamente após cadastro no Auth</li>
+    <li><code>set_updated_at()</code>: atualiza coluna <code>updated_at</code></li>
+    <li><code>validate_appointment()</code>: valida coerência de serviço/profissional e bloqueios</li>
+    <li><code>get_booked_slots(uuid, date)</code>: retorna horários ocupados do dia</li>
+  </ul>
+
+  <h3>6.4 Segurança</h3>
+  <ul>
+    <li>RLS habilitado em todas as tabelas principais</li>
+    <li>Policies separadas para acesso da profissional e acesso público necessário</li>
+  </ul>
+
+  <h2>7. Variáveis de Ambiente</h2>
+  <p>Arquivo local: <code>.env.local</code></p>
+  <pre>NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxx</pre>
+  <p><strong>Importante:</strong> nunca usar <code>service_role</code> no frontend.</p>
+
+  <h2>8. Execução Local</h2>
+  <pre>npm install
+npm run dev</pre>
+  <p>Aplicação local: <code>http://localhost:3000</code></p>
+
+  <h2>9. Scripts Disponíveis</h2>
+  <table>
+    <tr><th>Script</th><th>Função</th></tr>
+    <tr><td><code>npm run dev</code></td><td>Ambiente de desenvolvimento</td></tr>
+    <tr><td><code>npm run build</code></td><td>Build de produção</td></tr>
+    <tr><td><code>npm run start</code></td><td>Executa app já buildado</td></tr>
+    <tr><td><code>npm run lint</code></td><td>Validação de lint</td></tr>
+  </table>
+
+  <h2>10. Deploy na Vercel (resumo operacional)</h2>
+  <ol>
+    <li>Conectar repositório no Vercel</li>
+    <li>Definir Root Directory para <code>lash-agenda</code> (quando aplicável)</li>
+    <li>Configurar variáveis de ambiente (Production/Preview)</li>
+    <li>Executar deploy</li>
+    <li>Validar fluxos principais no ambiente publicado</li>
+  </ol>
+
+  <h2>11. Fluxo de Teste Funcional (Checklist)</h2>
+  <ol>
+    <li>Cadastro/Login da profissional</li>
+    <li>Cadastro de serviço ativo</li>
+    <li>Configuração de disponibilidade</li>
+    <li>Cadastro de bloqueio em data futura</li>
+    <li>Agendamento público por link</li>
+    <li>Visualização do agendamento no painel</li>
+    <li>Alteração de status para confirmado/concluido/cancelado</li>
+  </ol>
+
+  <h2>12. Troubleshooting (Erros comuns)</h2>
+  <table>
+    <tr><th>Erro</th><th>Causa comum</th><th>Solução</th></tr>
+    <tr>
+      <td><code>Variaveis NEXT_PUBLIC...</code></td>
+      <td>Variáveis não configuradas na Vercel</td>
+      <td>Adicionar <code>NEXT_PUBLIC_SUPABASE_URL</code> e <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td>
+    </tr>
+    <tr>
+      <td>Foreign key em <code>services_professional_id_fkey</code></td>
+      <td>Usuário sem profile correspondente</td>
+      <td>Garantir trigger/função <code>handle_new_user()</code> e upsert de profile</td>
+    </tr>
+    <tr>
+      <td>Sem horários no booking</td>
+      <td>ID da profissional incorreto, sem serviço ativo ou sem disponibilidade</td>
+      <td>Confirmar link correto, serviços ativos e disponibilidade cadastrada</td>
+    </tr>
+    <tr>
+      <td>Warning de múltiplos lockfiles no build</td>
+      <td>Mais de um <code>package-lock.json</code> no repo</td>
+      <td>Manter lockfile apenas do app principal (opcional para demo)</td>
+    </tr>
+  </table>
+
+  <h2>13. UI/Branding Atual</h2>
+  <ul>
+    <li>Identidade visual elegante com paleta nude/rosé</li>
+    <li>Cards premium, botões e inputs padronizados</li>
+    <li>Calendário visual interativo na página pública</li>
+    <li>Marca textual principal: <strong>Agenda</strong></li>
+  </ul>
+
+  <h2>14. Melhorias Futuras Sugeridas</h2>
+  <ul>
+    <li>Notificações por e-mail/WhatsApp</li>
+    <li>Confirmação automática e lembretes</li>
+    <li>Dashboard financeiro</li>
+    <li>Múltiplos profissionais no mesmo negócio</li>
+    <li>Testes automatizados (unitários e e2e)</li>
+    <li>Monitoramento (Sentry/Logs)</li>
+  </ul>
+
+  <h2>15. Conclusão</h2>
+  <p>
+    O projeto Agenda MVP já possui base sólida para demonstração e uso inicial:
+    autenticação, gestão completa da agenda da profissional, booking público com regras
+    de disponibilidade e segurança no banco com RLS. A evolução natural é estabilização
+    de produção, automações de comunicação e funcionalidades de gestão avançada.
+  </p>
+</body>
+</html>

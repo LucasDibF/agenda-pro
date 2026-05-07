@@ -48,6 +48,36 @@ const toLocalDateInput = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const normalizePhoneForWhatsapp = (phone: string) => {
+  const digits = phone.replace(/\D/g, "");
+
+  if (digits.length < 10) return null;
+  if (digits.startsWith("55")) return digits;
+  return `55${digits}`;
+};
+
+const formatDateBr = (dateInput: string) => {
+  const [year, month, day] = dateInput.split("-");
+  return `${day}/${month}/${year}`;
+};
+
+const buildWhatsappUrl = (appointment: AppointmentRow) => {
+  const phone = normalizePhoneForWhatsapp(appointment.customer_phone);
+  if (!phone) return null;
+
+  const firstName =
+    appointment.customer_name.trim().split(/\s+/).filter(Boolean)[0] || "cliente";
+  const serviceName = appointment.service?.name ?? "serviço";
+  const message = [
+    `Olá ${firstName}!`,
+    `Seu horário foi confirmado para ${formatDateBr(appointment.appointment_date)} às ${appointment.start_time.slice(0, 5)}.`,
+    `Serviço: ${serviceName}.`,
+    "Qualquer dúvida, estou à disposição.",
+  ].join(" ");
+
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+};
+
 export function AppointmentsManager() {
   const [professionalId, setProfessionalId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(toLocalDateInput(new Date()));
@@ -245,26 +275,39 @@ export function AppointmentsManager() {
                     ) : null}
                   </div>
 
-                  <label className="space-y-1">
-                    <span className="text-xs font-medium text-neutral-600">Status</span>
-                    <select
-                      value={appointment.status}
-                      disabled={updatingId === appointment.id}
-                      onChange={(event) =>
-                        handleChangeStatus(
-                          appointment.id,
-                          event.target.value as AppointmentStatus
-                        )
-                      }
-                      className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none ring-pink-300 focus:ring disabled:opacity-70"
-                    >
-                      {statusOptions.map((statusOption) => (
-                        <option key={statusOption.value} value={statusOption.value}>
-                          {statusOption.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="space-y-2">
+                    <label className="space-y-1">
+                      <span className="text-xs font-medium text-neutral-600">Status</span>
+                      <select
+                        value={appointment.status}
+                        disabled={updatingId === appointment.id}
+                        onChange={(event) =>
+                          handleChangeStatus(
+                            appointment.id,
+                            event.target.value as AppointmentStatus
+                          )
+                        }
+                        className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none ring-pink-300 focus:ring disabled:opacity-70"
+                      >
+                        {statusOptions.map((statusOption) => (
+                          <option key={statusOption.value} value={statusOption.value}>
+                            {statusOption.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {appointment.status === "confirmado" && buildWhatsappUrl(appointment) ? (
+                      <a
+                        href={buildWhatsappUrl(appointment) ?? undefined}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs font-semibold text-green-700 hover:bg-green-100"
+                      >
+                        Enviar WhatsApp
+                      </a>
+                    ) : null}
+                  </div>
                 </div>
               </article>
             ))}
