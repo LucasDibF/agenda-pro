@@ -1,0 +1,276 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase/client";
+
+type AppointmentStatus = "agendado" | "confirmado" | "cancelado" | "concluido";
+
+type AppointmentRow = {
+  id: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  appointment_date: string;
+  start_time: string;
+  end_time: string;
+  status: AppointmentStatus;
+  notes: string | null;
+  service: {
+    name: string;
+  } | null;
+};
+
+type AppointmentSelectRow = {
+  id: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
+  appointment_date: string;
+  start_time: string;
+  end_time: string;
+  status: AppointmentStatus;
+  notes: string | null;
+  service: Array<{ name: string }> | { name: string } | null;
+};
+
+const statusOptions: Array<{ value: AppointmentStatus; label: string }> = [
+  { value: "agendado", label: "Agendado" },
+  { value: "confirmado", label: "Confirmado" },
+  { value: "cancelado", label: "Cancelado" },
+  { value: "concluido", label: "Concluido" },
+];
+
+const toLocalDateInput = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+export function AppointmentsManager() {
+  const [professionalId, setProfessionalId] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(toLocalDateInput(new Date()));
+  const [appointments, setAppointments] = useState<AppointmentRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  const totalAppointments = appointments.length;
+  const confirmedAppointments = useMemo(
+    () => appointments.filter((item) => item.status === "confirmado").length,
+    [appointments]
+  );
+
+  const ensureProfessionalProfile = async (user: User) => {
+    const fullName =
+      typeof user.user_metadata?.full_name === "string"
+        ? user.user_metadata.full_name
+        : null;
+    const phone =
+      typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : null;
+
+    const { error } = await supabase.from("profiles").upsert({
+      id: user.id,
+      full_name: fullName,
+      phone,
+      role: "professional",
+    });
+
+    return error;
+  };
+
+  const fetchAppointments = async (userId: string, dateInput: string) => {
+    const { data, error } = await supabase
+      .from("appointments")
+      .select(
+        "id, customer_name, customer_phone, customer_email, appointment_date, start_time, end_time, status, notes, service:services(name)"
+      )
+      .eq("professional_id", userId)
+      .eq("appointment_date", dateInput)
+      .order("start_time", { ascending: true });
+
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+
+    const normalized = ((data ?? []) as AppointmentSelectRow[]).map((row) => ({
+      id: row.id,
+      customer_name: row.customer_name,
+      customer_phone: row.customer_phone,
+      customer_email: row.customer_email,
+      appointment_date: row.appointment_date,
+      start_time: row.start_time,
+      end_time: row.end_time,
+      status: row.status,
+      notes: row.notes,
+      service: Array.isArray(row.service) ? (row.service[0] ?? null) : row.service,
+    }));
+
+    setAppointments(normalized);
+  };
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true);
+      setErrorMessage("");
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        setErrorMessage("Nao foi possivel carregar o usuario logado.");
+        setLoading(false);
+        return;
+      }
+
+      const profileError = await ensureProfessionalProfile(user);
+      if (profileError) {
+        setErrorMessage(profileError.message);
+        setLoading(false);
+        return;
+      }
+
+      setProfessionalId(user.id);
+      await fetchAppointments(user.id, selectedDate);
+      setLoading(false);
+    };
+
+    loadInitialData();
+  }, [selectedDate]);
+
+  const handleChangeStatus = async (appointmentId: string, status: AppointmentStatus) => {
+    if (!professionalId) {
+      setErrorMessage("Usuario nao identificado. Faca login novamente.");
+      return;
+    }
+
+    setErrorMessage("");
+    setSuccessMessage("");
+    setUpdatingId(appointmentId);
+
+    const { error } = await supabase
+      .from("appointments")
+      .update({ status })
+      .eq("id", appointmentId);
+
+    if (error) {
+      setErrorMessage(error.message);
+      setUpdatingId(null);
+      return;
+    }
+
+    setAppointments((current) =>
+      current.map((item) => (item.id === appointmentId ? { ...item, status } : item))
+    );
+    setSuccessMessage("Status atualizado com sucesso.");
+    setUpdatingId(null);
+  };
+
+  return (
+    <section className="space-y-6">
+      <div className="rounded-xl border border-neutral-200 bg-white p-5">
+        <h2 className="text-lg font-semibold text-neutral-900">Agendamentos por dia</h2>
+        <p className="mt-1 text-sm text-neutral-600">
+          Visualize os agendamentos e altere o status rapidamente.
+        </p>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <label className="space-y-1 md:col-span-1">
+            <span className="text-sm font-medium text-neutral-700">Data</span>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(event) => setSelectedDate(event.target.value)}
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+            />
+          </label>
+
+          <article className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-xs text-neutral-500">Total no dia</p>
+            <p className="text-2xl font-bold text-neutral-900">{totalAppointments}</p>
+          </article>
+
+          <article className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-xs text-neutral-500">Confirmados</p>
+            <p className="text-2xl font-bold text-neutral-900">{confirmedAppointments}</p>
+          </article>
+        </div>
+
+        {errorMessage ? (
+          <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            {errorMessage}
+          </p>
+        ) : null}
+
+        {successMessage ? (
+          <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+            {successMessage}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="rounded-xl border border-neutral-200 bg-white p-5">
+        <h3 className="text-lg font-semibold text-neutral-900">Lista do dia</h3>
+
+        {loading ? (
+          <p className="mt-4 text-sm text-neutral-600">Carregando agendamentos...</p>
+        ) : appointments.length === 0 ? (
+          <p className="mt-4 text-sm text-neutral-600">
+            Nenhum agendamento encontrado para esta data.
+          </p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {appointments.map((appointment) => (
+              <article
+                key={appointment.id}
+                className="rounded-lg border border-neutral-200 bg-neutral-50 p-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="font-semibold text-neutral-900">
+                      {appointment.start_time.slice(0, 5)} - {appointment.end_time.slice(0, 5)} •{" "}
+                      {appointment.service?.name ?? "Serviço"}
+                    </p>
+                    <p className="text-sm text-neutral-700">{appointment.customer_name}</p>
+                    <p className="text-sm text-neutral-500">
+                      {appointment.customer_phone} • {appointment.customer_email}
+                    </p>
+                    {appointment.notes ? (
+                      <p className="text-sm text-neutral-500">Obs: {appointment.notes}</p>
+                    ) : null}
+                  </div>
+
+                  <label className="space-y-1">
+                    <span className="text-xs font-medium text-neutral-600">Status</span>
+                    <select
+                      value={appointment.status}
+                      disabled={updatingId === appointment.id}
+                      onChange={(event) =>
+                        handleChangeStatus(
+                          appointment.id,
+                          event.target.value as AppointmentStatus
+                        )
+                      }
+                      className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none ring-pink-300 focus:ring disabled:opacity-70"
+                    >
+                      {statusOptions.map((statusOption) => (
+                        <option key={statusOption.value} value={statusOption.value}>
+                          {statusOption.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}

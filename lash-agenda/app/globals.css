@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Panda Font";
+  src: url("/fonts/PandaFont.woff2") format("woff2"),
+    url("/fonts/PandaFont.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  --background: #f7f2ef;
+  --foreground: #2e2725;
+  --surface: #fffdfb;
+  --surface-soft: #f3e7e1;
+  --line: #e8d7cf;
+  --accent: #c98f82;
+  --accent-dark: #b5796d;
+  --ink-strong: #1f1917;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-brand: var(--font-brand-serif);
+}
+
+body {
+  min-height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background-image: radial-gradient(circle at 10% 5%, #f2d8ce 0%, transparent 30%),
+    radial-gradient(circle at 90% 10%, #efd8cf 0%, transparent 25%);
+}
+
+@layer components {
+  .page-shell {
+    @apply min-h-screen;
+  }
+
+  .hero-shell {
+    @apply rounded-[2rem] border p-8 shadow-sm;
+    border-color: var(--line);
+    background: linear-gradient(135deg, #f3dfd6 0%, #ead4ca 55%, #e0c4b9 100%);
+  }
+
+  .elevated-card {
+    @apply rounded-2xl border shadow-sm;
+    border-color: var(--line);
+    background: var(--surface);
+  }
+
+  .muted-card {
+    @apply rounded-2xl border;
+    border-color: var(--line);
+    background: color-mix(in oklab, var(--surface) 84%, #f0e1da 16%);
+  }
+
+  .btn-primary {
+    @apply rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition;
+    background: linear-gradient(135deg, var(--ink-strong) 0%, #2f2725 100%);
+  }
+
+  .btn-primary:hover {
+    filter: brightness(1.06);
+  }
+
+  .btn-soft {
+    @apply rounded-xl border px-5 py-2.5 text-sm font-semibold transition;
+    border-color: var(--line);
+    color: var(--ink-strong);
+    background: var(--surface);
+  }
+
+  .btn-soft:hover {
+    background: #f8f1ed;
+  }
+
+  .input-shell {
+    @apply w-full rounded-xl border px-3 py-2 text-sm outline-none transition;
+    border-color: var(--line);
+    background: #fffdfa;
+  }
+
+  .input-shell:focus {
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 28%, transparent);
+    border-color: var(--accent);
+  }
+
+  .title-display {
+    color: var(--ink-strong);
+    letter-spacing: -0.02em;
+  }
+
+  .brand-word {
+    font-family: "Panda Font", var(--font-brand), "Times New Roman", serif;
+    letter-spacing: -0.02em;
+    color: var(--ink-strong);
+  }
+}
