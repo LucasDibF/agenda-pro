@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase/client";
 
 export function BookingLinkCard() {
   const [bookingLink, setBookingLink] = useState("");
+  const [bookingCode, setBookingCode] = useState("");
   const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
@@ -15,8 +16,17 @@ export function BookingLinkCard() {
 
       if (!user) return;
 
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("booking_code")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const code = profile?.booking_code || user.id;
+      setBookingCode(code);
+
       if (typeof window !== "undefined") {
-        setBookingLink(`${window.location.origin}/booking/${user.id}`);
+        setBookingLink(`${window.location.origin}/booking/${code}`);
       }
     };
 
@@ -33,6 +43,10 @@ export function BookingLinkCard() {
   return (
     <article className="elevated-card p-4 md:col-span-6">
       <h2 className="text-sm font-medium text-[#6f5852]">Link publico de agendamento</h2>
+      <p className="mt-2 text-sm text-[#2f231f]">
+        Codigo de agendamento:{" "}
+        <span className="font-semibold">{bookingCode || "Carregando..."}</span>
+      </p>
       <p className="mt-2 break-all text-sm text-[#2f231f]">
         {bookingLink || "Carregando link..."}
       </p>

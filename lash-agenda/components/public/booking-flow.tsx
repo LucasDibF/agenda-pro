@@ -33,7 +33,7 @@ type BookedSlotRow = {
 };
 
 type BookingFlowProps = {
-  professionalId: string;
+  professionalIdentifier: string;
 };
 
 type SlotOption = {
@@ -73,7 +73,8 @@ const formatCurrencyBRL = (value: number) =>
     currency: "BRL",
   }).format(value);
 
-export function BookingFlow({ professionalId }: BookingFlowProps) {
+export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
+  const [professionalId, setProfessionalId] = useState<string | null>(null);
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [availabilityRows, setAvailabilityRows] = useState<AvailabilityRow[]>([]);
   const [blockedRows, setBlockedRows] = useState<BlockedTimeRow[]>([]);
@@ -101,7 +102,52 @@ export function BookingFlow({ professionalId }: BookingFlowProps) {
   );
 
   useEffect(() => {
+    const resolveProfessional = async () => {
+      setLoading(true);
+      setErrorMessage("");
+
+      const trimmedIdentifier = professionalIdentifier.trim();
+      if (!trimmedIdentifier) {
+        setErrorMessage("Codigo da profissional invalido.");
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.rpc("resolve_professional_id", {
+        p_identifier: trimmedIdentifier,
+      });
+
+      if (error) {
+        const isUuid =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+            trimmedIdentifier
+          );
+
+        if (isUuid) {
+          setProfessionalId(trimmedIdentifier);
+          return;
+        }
+
+        setErrorMessage(error.message);
+        setLoading(false);
+        return;
+      }
+
+      if (!data) {
+        setErrorMessage("Codigo da profissional nao encontrado.");
+        setLoading(false);
+        return;
+      }
+
+      setProfessionalId(data as string);
+    };
+
+    resolveProfessional();
+  }, [professionalIdentifier]);
+
+  useEffect(() => {
     const loadInitialData = async () => {
+      if (!professionalId) return;
       setLoading(true);
       setErrorMessage("");
 
@@ -149,6 +195,7 @@ export function BookingFlow({ professionalId }: BookingFlowProps) {
 
   useEffect(() => {
     const loadDateData = async () => {
+      if (!professionalId) return;
       if (!selectedDate) return;
 
       setErrorMessage("");
@@ -248,8 +295,8 @@ export function BookingFlow({ professionalId }: BookingFlowProps) {
     setErrorMessage("");
     setSuccessMessage("");
 
-    if (!selectedService || !selectedDate || !selectedStartTime) {
-      setErrorMessage("Selecione serviço, data e horário.");
+    if (!professionalId || !selectedService || !selectedDate || !selectedStartTime) {
+      setErrorMessage("Selecione servi?o, data e hor?rio.");
       return;
     }
 
@@ -315,7 +362,7 @@ export function BookingFlow({ professionalId }: BookingFlowProps) {
     <section className="space-y-6">
       {services.length === 0 ? (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Esta URL nao possui serviços ativos. Confirme se voce abriu o link correto da
+          Esta URL nao possui servi?os ativos. Confirme se voce abriu o link correto da
           profissional.
         </p>
       ) : null}
@@ -327,11 +374,11 @@ export function BookingFlow({ professionalId }: BookingFlowProps) {
       ) : null}
 
       <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-neutral-900">1) Escolha o serviço</h2>
+        <h2 className="text-lg font-semibold text-neutral-900">1) Escolha o servi?o</h2>
         <div className="mt-3 grid gap-3">
           {services.length === 0 ? (
             <p className="text-sm text-neutral-600">
-              Esta profissional ainda nao possui serviços ativos.
+              Esta profissional ainda nao possui servi?os ativos.
             </p>
           ) : (
             services.map((service) => (
@@ -347,7 +394,7 @@ export function BookingFlow({ professionalId }: BookingFlowProps) {
               >
                 <p className="font-semibold text-neutral-900">{service.name}</p>
                 <p className="text-sm text-neutral-600">
-                  {service.duration_minutes} min • {formatCurrencyBRL(service.price)}
+                  {service.duration_minutes} min ��� {formatCurrencyBRL(service.price)}
                 </p>
                 {service.description ? (
                   <p className="mt-1 text-sm text-neutral-500">{service.description}</p>

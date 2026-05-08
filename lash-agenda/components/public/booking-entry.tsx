@@ -57,14 +57,14 @@ export function BookingEntry() {
         <form onSubmit={handleSubmit} className="elevated-card space-y-4 p-5">
           <label className="block space-y-1">
             <span className="text-sm font-medium text-[#4f403b]">
-              Codigo da profissional (UUID)
+              Codigo da profissional
             </span>
             <input
               type="text"
               value={professionalIdInput}
               onChange={(event) => setProfessionalIdInput(event.target.value)}
               className="input-shell"
-              placeholder="Ex: 3f6f...-...."
+              placeholder="Ex: a1b2c3d4e5f6"
             />
           </label>
 

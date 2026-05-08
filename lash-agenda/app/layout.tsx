@@ -19,8 +19,8 @@ const brandSerif = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Agenda MVP",
-  description: "MVP de agendamento online para profissionais",
+  title: "Agenda Online",
+  description: "App de agendamento online para profissionais",
 };
 
 export default function RootLayout({

@@ -23,10 +23,10 @@ export default function HomePage() {
 
             <div className="flex flex-wrap gap-3">
               <Link href="/login" className="btn-primary">
-                Login da profissional
+                Login
               </Link>
               <Link href="/register" className="btn-soft">
-                Criar conta da profissional
+                Criar conta
               </Link>
             </div>
           </div>

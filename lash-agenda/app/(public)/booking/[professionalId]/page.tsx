@@ -18,7 +18,7 @@ export default async function PublicBookingPage({ params }: BookingPageProps) {
           Escolha o serviço, a data e o melhor horário para você.
         </p>
 
-        <BookingFlow professionalId={professionalId} />
+        <BookingFlow professionalIdentifier={professionalId} />
       </section>
     </main>
   );

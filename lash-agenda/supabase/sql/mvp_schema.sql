@@ -10,12 +10,26 @@ end $$;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
+  booking_code text unique,
   full_name text,
   phone text,
   role text not null default 'professional' check (role in ('professional')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles
+  add column if not exists booking_code text;
+
+update public.profiles
+set booking_code = lower(substr(replace(id::text, '-', ''), 1, 12))
+where booking_code is null;
+
+alter table public.profiles
+  alter column booking_code set not null;
+
+create unique index if not exists uq_profiles_booking_code
+  on public.profiles(booking_code);
 
 create or replace function public.handle_new_user()
 returns trigger
@@ -24,9 +38,10 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, full_name, phone, role)
+  insert into public.profiles (id, booking_code, full_name, phone, role)
   values (
     new.id,
+    lower(substr(replace(new.id::text, '-', ''), 1, 12)),
     coalesce(new.raw_user_meta_data->>'full_name', ''),
     coalesce(new.raw_user_meta_data->>'phone', ''),
     'professional'
@@ -340,3 +355,33 @@ $$;
 
 revoke all on function public.get_booked_slots(uuid, date) from public;
 grant execute on function public.get_booked_slots(uuid, date) to anon, authenticated;
+
+create or replace function public.resolve_professional_id(p_identifier text)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_professional_id uuid;
+begin
+  if p_identifier is null or length(trim(p_identifier)) = 0 then
+    return null;
+  end if;
+
+  if trim(p_identifier) ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' then
+    return trim(p_identifier)::uuid;
+  end if;
+
+  select p.id
+    into v_professional_id
+  from public.profiles p
+  where p.booking_code = lower(trim(p_identifier))
+  limit 1;
+
+  return v_professional_id;
+end;
+$$;
+
+revoke all on function public.resolve_professional_id(text) from public;
+grant execute on function public.resolve_professional_id(text) to anon, authenticated;
