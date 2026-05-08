@@ -57,14 +57,14 @@ export default function RegisterPage() {
       <section className="mx-auto flex max-w-md flex-col gap-6 px-6 py-16">
         <div className="space-y-2">
           <h1 className="title-display text-3xl font-bold">Criar conta da profissional</h1>
-          <p className="text-sm text-[#6c5953]">
+          <p className="text-sm text-[#6E7380]">
             Primeiro acesso do painel administrativo.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="elevated-card space-y-4 p-5">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#4f403b]">Nome completo</span>
+            <span className="text-sm font-medium text-[#6E7380]">Nome completo</span>
             <input
               type="text"
               value={fullName}
@@ -76,7 +76,7 @@ export default function RegisterPage() {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#4f403b]">Telefone</span>
+            <span className="text-sm font-medium text-[#6E7380]">Telefone</span>
             <input
               type="tel"
               value={phone}
@@ -88,7 +88,7 @@ export default function RegisterPage() {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#4f403b]">Email</span>
+            <span className="text-sm font-medium text-[#6E7380]">Email</span>
             <input
               type="email"
               value={email}
@@ -100,7 +100,7 @@ export default function RegisterPage() {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#4f403b]">Senha</span>
+            <span className="text-sm font-medium text-[#6E7380]">Senha</span>
             <input
               type="password"
               value={password}
@@ -127,9 +127,9 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <p className="text-sm text-[#6c5953]">
+        <p className="text-sm text-[#6E7380]">
           Ja tem conta?{" "}
-          <Link href="/login" className="font-medium text-pink-700 hover:underline">
+          <Link href="/login" className="font-medium text-[#8B5CF6] hover:underline">
             Fazer login
           </Link>
         </p>

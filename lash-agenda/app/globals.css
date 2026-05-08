@@ -8,14 +8,31 @@
 }
 
 :root {
-  --background: #f7f2ef;
-  --foreground: #2e2725;
-  --surface: #fffdfb;
-  --surface-soft: #f3e7e1;
-  --line: #e8d7cf;
-  --accent: #c98f82;
-  --accent-dark: #b5796d;
-  --ink-strong: #1f1917;
+  --background: #ffffff;
+  --foreground: #1f2430;
+  --surface: #ffffff;
+  --surface-soft: #f8f9fc;
+  --line: #e5e7ee;
+  --accent: #8b5cf6;
+  --accent-dark: #6d3fe0;
+  --ink-strong: #171b26;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #000000;
+    --foreground: #ececf3;
+    --surface: #12141a;
+    --surface-soft: #1b1e27;
+    --line: #2a2e3a;
+    --accent: #a78bfa;
+    --accent-dark: #8b5cf6;
+    --ink-strong: #f5f6fb;
+  }
+
+  body {
+    background-image: none;
+  }
 }
 
 @theme inline {
@@ -31,8 +48,8 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
-  background-image: radial-gradient(circle at 10% 5%, #f2d8ce 0%, transparent 30%),
-    radial-gradient(circle at 90% 10%, #efd8cf 0%, transparent 25%);
+  background-image: radial-gradient(circle at 12% 0%, #f1eeff 0%, transparent 34%),
+    radial-gradient(circle at 85% 12%, #eef2ff 0%, transparent 28%);
 }
 
 @layer components {
@@ -43,24 +60,28 @@ body {
   .hero-shell {
     @apply rounded-[2rem] border p-8 shadow-sm;
     border-color: var(--line);
-    background: linear-gradient(135deg, #f3dfd6 0%, #ead4ca 55%, #e0c4b9 100%);
+    background: linear-gradient(135deg, #ffffff 0%, #f5f2ff 55%, #eef2ff 100%);
+    box-shadow: 0 18px 50px rgba(34, 39, 56, 0.12);
   }
 
   .elevated-card {
     @apply rounded-2xl border shadow-sm;
     border-color: var(--line);
     background: var(--surface);
+    box-shadow: 0 14px 34px rgba(34, 39, 56, 0.1);
   }
 
   .muted-card {
     @apply rounded-2xl border;
     border-color: var(--line);
-    background: color-mix(in oklab, var(--surface) 84%, #f0e1da 16%);
+    background: color-mix(in oklab, var(--surface) 86%, #e5e7ee 14%);
   }
 
   .btn-primary {
-    @apply rounded-xl px-5 py-2.5 text-sm font-semibold text-white transition;
-    background: linear-gradient(135deg, var(--ink-strong) 0%, #2f2725 100%);
+    @apply rounded-xl px-5 py-2.5 text-sm font-semibold transition;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    box-shadow: 0 8px 18px rgba(109, 63, 224, 0.24);
   }
 
   .btn-primary:hover {
@@ -70,18 +91,19 @@ body {
   .btn-soft {
     @apply rounded-xl border px-5 py-2.5 text-sm font-semibold transition;
     border-color: var(--line);
-    color: var(--ink-strong);
-    background: var(--surface);
+    color: var(--foreground);
+    background: color-mix(in oklab, #ffffff 88%, var(--surface) 12%);
   }
 
   .btn-soft:hover {
-    background: #f8f1ed;
+    background: color-mix(in oklab, #ffffff 70%, var(--surface) 30%);
   }
 
   .input-shell {
     @apply w-full rounded-xl border px-3 py-2 text-sm outline-none transition;
     border-color: var(--line);
-    background: #fffdfa;
+    background: #ffffff;
+    color: var(--foreground);
   }
 
   .input-shell:focus {
@@ -92,11 +114,71 @@ body {
   .title-display {
     color: var(--ink-strong);
     letter-spacing: -0.02em;
+    font-family: var(--font-brand), "Times New Roman", serif;
+    font-weight: 600;
   }
 
   .brand-word {
     font-family: "Panda Font", var(--font-brand), "Times New Roman", serif;
     letter-spacing: -0.02em;
-    color: var(--ink-strong);
+    color: #7c4dff;
+  }
+
+  .booking-animated-shell {
+    @apply relative overflow-hidden rounded-[2rem] border p-6;
+    border-color: var(--line);
+    background: color-mix(in oklab, var(--surface) 92%, #ffffff 8%);
+    box-shadow: 0 16px 40px rgba(34, 39, 56, 0.12);
+  }
+
+  .booking-blob {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(10px);
+    pointer-events: none;
+    animation: floatBlob 11s ease-in-out infinite;
+  }
+
+  .booking-blob-one {
+    width: 260px;
+    height: 260px;
+    top: -120px;
+    right: -90px;
+    background: color-mix(in oklab, var(--accent) 36%, transparent);
+  }
+
+  .booking-blob-two {
+    width: 220px;
+    height: 220px;
+    bottom: -90px;
+    left: -70px;
+    background: color-mix(in oklab, var(--accent-dark) 30%, transparent);
+    animation-delay: -3s;
+  }
+
+  .booking-blob-three {
+    width: 180px;
+    height: 180px;
+    top: 34%;
+    right: 12%;
+    background: color-mix(in oklab, var(--accent) 24%, transparent);
+    animation-delay: -6s;
+  }
+
+  .booking-content-layer {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@keyframes floatBlob {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, 18px, 0) scale(1.06);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }

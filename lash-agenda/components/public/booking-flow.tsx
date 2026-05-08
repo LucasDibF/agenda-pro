@@ -244,6 +244,8 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     if (dayAvailability.length === 0) return [];
 
     const duration = selectedService.duration_minutes;
+    const now = new Date();
+    const isSelectedDateToday = selectedDate === toLocalDateInput(now);
     const generatedSlots: SlotOption[] = [];
 
     for (const row of dayAvailability) {
@@ -257,6 +259,10 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
         const slotEnd = new Date(slotStart.getTime() + duration * 60 * 1000);
 
         if (slotEnd > endWindow) break;
+        if (isSelectedDateToday && slotStart <= now) {
+          cursor = new Date(cursor.getTime() + stepMinutes * 60 * 1000);
+          continue;
+        }
 
         const overlapsBlocked = blockedRows.some((blocked) =>
           hasOverlap(
@@ -352,32 +358,32 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-neutral-200 bg-white p-6">
-        <p className="text-sm text-neutral-600">Carregando disponibilidade...</p>
+      <div className="elevated-card p-6">
+        <p className="text-sm text-[var(--foreground)]/75">Carregando disponibilidade...</p>
       </div>
     );
   }
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-5">
       {services.length === 0 ? (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="rounded-xl border border-amber-200 bg-amber-50/85 px-3 py-2 text-sm text-amber-800">
           Esta URL nao possui servi?os ativos. Confirme se voce abriu o link correto da
           profissional.
         </p>
       ) : null}
 
       {availabilityRows.length === 0 ? (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <p className="rounded-xl border border-amber-200 bg-amber-50/85 px-3 py-2 text-sm text-amber-800">
           Esta profissional ainda nao configurou horarios de atendimento.
         </p>
       ) : null}
 
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-neutral-900">1) Escolha o servi?o</h2>
+      <div className="elevated-card p-5">
+        <h2 className="text-lg font-semibold text-[var(--ink-strong)]">1) Escolha o servi?o</h2>
         <div className="mt-3 grid gap-3">
           {services.length === 0 ? (
-            <p className="text-sm text-neutral-600">
+            <p className="text-sm text-[var(--foreground)]/75">
               Esta profissional ainda nao possui servi?os ativos.
             </p>
           ) : (
@@ -386,18 +392,18 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
                 key={service.id}
                 type="button"
                 onClick={() => setSelectedServiceId(service.id)}
-                className={`rounded-lg border px-4 py-3 text-left ${
+                className={`rounded-xl border px-4 py-3 text-left transition ${
                   selectedServiceId === service.id
-                    ? "border-pink-400 bg-pink-50"
-                    : "border-neutral-300 bg-white hover:bg-neutral-50"
+                    ? "border-[var(--accent)] bg-[var(--surface-soft)]"
+                    : "border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-soft)]"
                 }`}
               >
-                <p className="font-semibold text-neutral-900">{service.name}</p>
-                <p className="text-sm text-neutral-600">
-                  {service.duration_minutes} min ÿÿÿ {formatCurrencyBRL(service.price)}
+                <p className="font-semibold text-[var(--ink-strong)]">{service.name}</p>
+                <p className="text-sm text-[var(--foreground)]/75">
+                  {service.duration_minutes} min • {formatCurrencyBRL(service.price)}
                 </p>
                 {service.description ? (
-                  <p className="mt-1 text-sm text-neutral-500">{service.description}</p>
+                  <p className="mt-1 text-sm text-[var(--foreground)]/70">{service.description}</p>
                 ) : null}
               </button>
             ))
@@ -405,14 +411,14 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-neutral-900">2) Escolha data e horario</h2>
+      <div className="elevated-card p-5">
+        <h2 className="text-lg font-semibold text-[var(--ink-strong)]">2) Escolha data e horario</h2>
 
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <BookingCalendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
           <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Horario disponivel</span>
+            <span className="text-sm font-medium text-[var(--foreground)]">Horario disponivel</span>
             <select
               value={selectedStartTime}
               onChange={(event) => setSelectedStartTime(event.target.value)}
@@ -425,9 +431,9 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-[#7b635c]">
+            <p className="text-xs text-[var(--foreground)]/75">
               Data selecionada:{" "}
-              <span className="font-semibold text-[#4f403b]">
+              <span className="font-semibold text-[var(--ink-strong)]">
                 {new Intl.DateTimeFormat("pt-BR", { dateStyle: "full" }).format(
                   new Date(`${selectedDate}T00:00:00`)
                 )}
@@ -437,18 +443,18 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
         </div>
 
         {slotOptions.length === 0 ? (
-          <p className="mt-3 text-sm text-neutral-600">
+          <p className="mt-3 text-sm text-[var(--foreground)]/75">
             Nenhum horario disponivel para esta data.
           </p>
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-neutral-900">3) Seus dados</h2>
+      <div className="elevated-card p-5">
+        <h2 className="text-lg font-semibold text-[var(--ink-strong)]">3) Seus dados</h2>
 
         <form onSubmit={handleSubmit} className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Nome</span>
+            <span className="text-sm font-medium text-[var(--foreground)]">Nome</span>
             <input
               type="text"
               value={form.customerName}
@@ -456,12 +462,12 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
                 setForm((prev) => ({ ...prev, customerName: event.target.value }))
               }
               required
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             />
           </label>
 
           <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Telefone</span>
+            <span className="text-sm font-medium text-[var(--foreground)]">Telefone</span>
             <input
               type="tel"
               value={form.customerPhone}
@@ -469,12 +475,12 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
                 setForm((prev) => ({ ...prev, customerPhone: event.target.value }))
               }
               required
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             />
           </label>
 
           <label className="space-y-1 md:col-span-2">
-            <span className="text-sm font-medium text-neutral-700">Email</span>
+            <span className="text-sm font-medium text-[var(--foreground)]">Email</span>
             <input
               type="email"
               value={form.customerEmail}
@@ -482,17 +488,17 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
                 setForm((prev) => ({ ...prev, customerEmail: event.target.value }))
               }
               required
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             />
           </label>
 
           <label className="space-y-1 md:col-span-2">
-            <span className="text-sm font-medium text-neutral-700">Observacoes (opcional)</span>
+            <span className="text-sm font-medium text-[var(--foreground)]">Observacoes (opcional)</span>
             <textarea
               value={form.notes}
               onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
               rows={3}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             />
           </label>
 
@@ -511,7 +517,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
           <button
             type="submit"
             disabled={submitting || !selectedServiceId || !selectedStartTime}
-            className="w-full rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 md:col-span-2"
+            className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-70 md:col-span-2"
           >
             {submitting ? "Confirmando..." : "Confirmar agendamento"}
           </button>

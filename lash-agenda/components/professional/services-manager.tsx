@@ -183,14 +183,54 @@ export function ServicesManager() {
 
   const handleDelete = async (serviceId: string) => {
     resetFeedback();
+    if (!professionalId) {
+      setErrorMessage("Usuario nao identificado. Faca login novamente.");
+      return;
+    }
 
-    const { error } = await supabase.from("services").delete().eq("id", serviceId);
+    const { count: linkedAppointments, error: linkedError } = await supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("professional_id", professionalId)
+      .eq("service_id", serviceId);
+
+    if (linkedError) {
+      setErrorMessage(linkedError.message);
+      return;
+    }
+
+    if ((linkedAppointments ?? 0) > 0) {
+      const { error: updateError } = await supabase
+        .from("services")
+        .update({ is_active: false })
+        .eq("id", serviceId)
+        .eq("professional_id", professionalId);
+
+      if (updateError) {
+        setErrorMessage(updateError.message);
+        return;
+      }
+
+      setServices((current) =>
+        current.map((item) => (item.id === serviceId ? { ...item, is_active: false } : item))
+      );
+      setSuccessMessage("Servico com agendamentos nao pode ser excluido. Ele foi desativado.");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("services")
+      .delete()
+      .eq("id", serviceId)
+      .eq("professional_id", professionalId);
+
     if (error) {
       setErrorMessage(error.message);
       return;
     }
 
     setServices((current) => current.filter((item) => item.id !== serviceId));
+    setSuccessMessage("Servico excluido com sucesso.");
   };
 
   if (loading) {

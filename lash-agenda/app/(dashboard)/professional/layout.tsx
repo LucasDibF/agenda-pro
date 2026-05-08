@@ -13,7 +13,7 @@ export default function ProfessionalLayout({
   return (
     <ProtectedRoute>
       <div className="page-shell">
-        <header className="border-b border-[#e8d7cf] bg-[#fff7f3]/90 backdrop-blur">
+        <header className="border-b border-[#E5E7EE] bg-[#FFFFFF]/95 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
             <Link href="/" className="brand-word text-2xl leading-none">
               Agenda
@@ -21,18 +21,18 @@ export default function ProfessionalLayout({
 
             <div className="flex items-center gap-6">
               <nav className="flex items-center gap-4 text-sm">
-                <Link href="/professional" className="text-[#5b4842] hover:underline">
+                <Link href="/professional" className="text-[#6E7380] hover:text-[#8B5CF6] hover:underline">
                   Dashboard
                 </Link>
                 <Link
                   href="/professional/services"
-                  className="text-[#5b4842] hover:underline"
+                  className="text-[#6E7380] hover:text-[#8B5CF6] hover:underline"
                 >
                   Serviços
                 </Link>
                 <Link
                   href="/professional/calendar"
-                  className="text-[#5b4842] hover:underline"
+                  className="text-[#6E7380] hover:text-[#8B5CF6] hover:underline"
                 >
                   Agenda
                 </Link>

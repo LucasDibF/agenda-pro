@@ -83,7 +83,7 @@ export function LoginForm({ nextPath, notice }: LoginFormProps) {
       <section className="mx-auto flex max-w-md flex-col gap-6 px-6 py-16">
         <div className="space-y-2">
           <h1 className="title-display text-3xl font-bold">Entrar no painel</h1>
-          <p className="text-sm text-[#6c5953]">
+          <p className="text-sm text-[#6E7380]">
             Use seu email e senha da profissional para acessar.
           </p>
         </div>
@@ -96,7 +96,7 @@ export function LoginForm({ nextPath, notice }: LoginFormProps) {
           ) : null}
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#4f403b]">Email</span>
+            <span className="text-sm font-medium text-[#6E7380]">Email</span>
             <input
               type="email"
               value={email}
@@ -108,7 +108,7 @@ export function LoginForm({ nextPath, notice }: LoginFormProps) {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#4f403b]">Senha</span>
+            <span className="text-sm font-medium text-[#6E7380]">Senha</span>
             <input
               type="password"
               value={password}
@@ -151,9 +151,9 @@ export function LoginForm({ nextPath, notice }: LoginFormProps) {
           ) : null}
         </form>
 
-        <p className="text-sm text-[#6c5953]">
+        <p className="text-sm text-[#6E7380]">
           Ainda nao tem conta?{" "}
-          <Link href="/register" className="font-medium text-pink-700 hover:underline">
+          <Link href="/register" className="font-medium text-[#8B5CF6] hover:underline">
             Criar acesso da profissional
           </Link>
         </p>

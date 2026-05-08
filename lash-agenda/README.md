@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Agenda SaaS Web (`lash-agenda`)
 
-## Getting Started
+Aplicação web do SaaS de agendamento para profissionais.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Next.js `16` (App Router)
+- React `19`
+- TypeScript
+- Tailwind CSS `4`
+- Supabase (Auth + Postgres + RLS)
+- Deploy recomendado: Vercel
+
+## Funcionalidades implementadas
+
+### Área da profissional
+
+- Login e registro com Supabase Auth
+- Dashboard com visão geral e próximos agendamentos
+- Gestão de serviços (criar, listar, ativar/desativar, excluir)
+- Gestão de disponibilidade semanal
+- Gestão de bloqueios de agenda
+- Agenda diária com alteração de status de atendimento
+- Link público de agendamento para compartilhar
+
+### Área pública (cliente)
+
+- Entrada por código/link da profissional
+- Seleção de serviço, data e horário disponível
+- Preenchimento de dados do cliente
+- Confirmação de agendamento
+
+## Regras de negócio aplicadas
+
+- Não permite sobreposição de agendamentos ativos (`agendado`/`confirmado`)
+- Considera duração do serviço no cálculo de slots
+- Exclui horários bloqueados e fora da disponibilidade
+- Profissional acessa apenas os próprios dados (RLS)
+- Cliente não possui painel autenticado
+
+## Estrutura principal
+
+- `app/(dashboard)/professional/*`: telas da profissional
+- `app/(public)/booking/*`: fluxo público de agendamento
+- `components/professional/*`: componentes de gestão
+- `components/public/*`: componentes do fluxo de cliente
+- `supabase/sql/mvp_schema.sql`: schema + políticas + funções SQL
+
+## Variáveis de ambiente
+
+Crie `lash-agenda/.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxxxxxxxxxxxxxxxx
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Rodar localmente
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cd "lash-agenda"
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Abra `http://localhost:3000`.
 
-## Learn More
+## Banco de dados (Supabase)
 
-To learn more about Next.js, take a look at the following resources:
+1. Abra o SQL Editor do Supabase
+2. Execute o conteúdo de:
+   - `supabase/sql/mvp_schema.sql`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Esse arquivo já inclui:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- tabelas
+- índices
+- triggers
+- função de validação de agendamento
+- função de slots ocupados (`get_booked_slots`)
+- função de resolução de identificador da profissional (`resolve_professional_id`)
+- políticas RLS
 
-## Deploy on Vercel
+## Deploy (Vercel)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Configuração recomendada:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Root Directory: `lash-agenda`
+- Build command: padrão Next.js
+- Variáveis em Production/Preview:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+## Documentação complementar
+
+- Guia consolidado do projeto: `docs/Documentacao_Atualizada.md`
