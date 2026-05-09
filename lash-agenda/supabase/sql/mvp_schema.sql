@@ -21,6 +21,9 @@ create table if not exists public.profiles (
 alter table public.profiles
   add column if not exists booking_code text;
 
+alter table public.profiles
+  add column if not exists push_token text;
+
 update public.profiles
 set booking_code = lower(substr(replace(id::text, '-', ''), 1, 12))
 where booking_code is null;

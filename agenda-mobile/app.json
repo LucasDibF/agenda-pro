@@ -3,6 +3,7 @@
     "name": "agenda-mobile",
     "slug": "agenda-mobile",
     "version": "1.0.0",
+    "scheme": "agenda-mobile",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,7 +14,9 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lucasfreitasdib.agendamobile",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {

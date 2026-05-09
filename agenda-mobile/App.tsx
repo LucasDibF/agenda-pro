@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import * as Clipboard from "expo-clipboard";
+import * as Notifications from "expo-notifications";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +19,14 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./src/lib/supabase";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 type AppointmentStatus = "agendado" | "confirmado" | "cancelado" | "concluido";
 type AppTab = "dashboard" | "services" | "agenda" | "availability" | "blocked";
@@ -92,6 +104,7 @@ type DashboardAppointmentRow = {
   id: string;
   customer_name: string;
   start_time: string;
+  end_time: string;
   status: AppointmentStatus;
   service: { name: string; price: number } | null;
 };
@@ -100,6 +113,7 @@ type DashboardAppointmentSelectRow = {
   id: string;
   customer_name: string;
   start_time: string;
+  end_time: string;
   status: AppointmentStatus;
   service: Array<{ name: string; price: number }> | { name: string; price: number } | null;
 };
@@ -114,34 +128,34 @@ const tabs: Array<{ value: AppTab; label: string }> = [
 
 const APP_THEMES: Record<ThemeMode, ThemeTokens> = {
   dark: {
-    background: "#121114",
-    card: "#1b181d",
-    border: "#2a252d",
-    textPrimary: "#f2ece8",
-    textSecondary: "#b2a7a0",
-    accent: "#c5866b",
-    accentSoft: "#2a2120",
-    buttonPrimary: "#c5866b",
-    buttonPrimaryText: "#241a16",
-    tabBg: "#17141a",
-    tabText: "#c8bbb4",
-    tabSelectedBg: "#c5866b",
-    tabSelectedText: "#241a16",
+    background: "#000000",
+    card: "#12141A",
+    border: "#2A2E3A",
+    textPrimary: "#ECECF3",
+    textSecondary: "#B7BDCC",
+    accent: "#A78BFA",
+    accentSoft: "#2A203D",
+    buttonPrimary: "#8B5CF6",
+    buttonPrimaryText: "#F7F5FF",
+    tabBg: "#191C25",
+    tabText: "#DCE0EB",
+    tabSelectedBg: "#8B5CF6",
+    tabSelectedText: "#FFFFFF",
   },
   light: {
-    background: "#f7f2ef",
-    card: "#fffdfb",
-    border: "#e8d7cf",
-    textPrimary: "#2f231f",
-    textSecondary: "#6d5a54",
-    accent: "#b9775d",
-    accentSoft: "#fff0ea",
-    buttonPrimary: "#2f2725",
-    buttonPrimaryText: "#ffffff",
-    tabBg: "#ffffff",
-    tabText: "#5f4b45",
-    tabSelectedBg: "#2f2725",
-    tabSelectedText: "#ffffff",
+    background: "#FFFFFF",
+    card: "#F8F9FC",
+    border: "#E5E7EE",
+    textPrimary: "#1F2430",
+    textSecondary: "#6E7380",
+    accent: "#8B5CF6",
+    accentSoft: "#EDE8FF",
+    buttonPrimary: "#7C4DFF",
+    buttonPrimaryText: "#FFFFFF",
+    tabBg: "#F1F3F8",
+    tabText: "#62697A",
+    tabSelectedBg: "#8B5CF6",
+    tabSelectedText: "#FFFFFF",
   },
 };
 
@@ -206,6 +220,7 @@ const formatDateTimeBr = (isoDateString: string) =>
 const webAppBaseUrl =
   process.env.EXPO_PUBLIC_WEB_APP_URL?.trim() ||
   "https://lash-agenda-k66ipli1j-lucas-freitas-dibs-projects.vercel.app";
+const APP_VERSION = "1.0.0";
 
 const weekdayOptions: Array<{ value: number; label: string }> = [
   { value: 1, label: "Segunda" },
@@ -254,6 +269,158 @@ const ensureProfessionalProfile = async (user: User) => {
 
   return error;
 };
+
+function AnimatedBackground({ mode }: { mode: ThemeMode | "light" }) {
+  const motionA = useRef(new Animated.Value(0)).current;
+  const motionB = useRef(new Animated.Value(0)).current;
+  const motionC = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animationA = Animated.loop(
+      Animated.sequence([
+        Animated.timing(motionA, {
+          toValue: 1,
+          duration: 9000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(motionA, {
+          toValue: 0,
+          duration: 9000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    const animationB = Animated.loop(
+      Animated.sequence([
+        Animated.timing(motionB, {
+          toValue: 1,
+          duration: 12000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(motionB, {
+          toValue: 0,
+          duration: 12000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    const animationC = Animated.loop(
+      Animated.sequence([
+        Animated.timing(motionC, {
+          toValue: 1,
+          duration: 7000,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(motionC, {
+          toValue: 0,
+          duration: 7000,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    animationA.start();
+    animationB.start();
+    animationC.start();
+
+    return () => {
+      animationA.stop();
+      animationB.stop();
+      animationC.stop();
+    };
+  }, [motionA, motionB, motionC]);
+
+  const blobOneTranslateY = motionA.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-32, 28],
+  });
+  const blobOneTranslateX = motionB.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-22, 24],
+  });
+  const blobTwoTranslateY = motionB.interpolate({
+    inputRange: [0, 1],
+    outputRange: [26, -24],
+  });
+  const blobTwoTranslateX = motionA.interpolate({
+    inputRange: [0, 1],
+    outputRange: [20, -18],
+  });
+  const blobThreeTranslateY = motionC.interpolate({
+    inputRange: [0, 1],
+    outputRange: [22, -26],
+  });
+  const blobThreeTranslateX = motionC.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-18, 20],
+  });
+  const blobScale = motionA.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.96, 1.12],
+  });
+  const blobRotate = motionB.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["-8deg", "8deg"],
+  });
+  const blobOpacity = motionC.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.72, 1],
+  });
+
+  const isDark = mode === "dark";
+  const blobOneColor = isDark ? "rgba(139,92,246,0.32)" : "rgba(139,92,246,0.24)";
+  const blobTwoColor = isDark ? "rgba(167,139,250,0.28)" : "rgba(124,77,255,0.2)";
+  const blobThreeColor = isDark ? "rgba(98,84,182,0.24)" : "rgba(173,157,255,0.2)";
+
+  return (
+    <View pointerEvents="none" style={styles.animatedBackgroundLayer}>
+      <Animated.View
+        style={[
+          styles.animatedBlob,
+          styles.animatedBlobOne,
+          {
+            backgroundColor: blobOneColor,
+            opacity: blobOpacity,
+            transform: [
+              { translateX: blobOneTranslateX },
+              { translateY: blobOneTranslateY },
+              { scale: blobScale },
+              { rotate: blobRotate },
+            ],
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.animatedBlob,
+          styles.animatedBlobTwo,
+          {
+            backgroundColor: blobTwoColor,
+            opacity: blobOpacity,
+            transform: [{ translateX: blobTwoTranslateX }, { translateY: blobTwoTranslateY }, { rotate: blobRotate }],
+          },
+        ]}
+      />
+      <Animated.View
+        style={[
+          styles.animatedBlob,
+          styles.animatedBlobThree,
+          {
+            backgroundColor: blobThreeColor,
+            opacity: blobOpacity,
+            transform: [{ translateX: blobThreeTranslateX }, { translateY: blobThreeTranslateY }, { scale: blobScale }],
+          },
+        ]}
+      />
+    </View>
+  );
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -323,8 +490,9 @@ function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.authContainer}>
+      <AnimatedBackground mode="light" />
       <View style={styles.authCard}>
-        <Text style={styles.brand}>Agenda App</Text>
+        <Text style={styles.brand}>{`v${APP_VERSION}`}</Text>
         <Text style={styles.title}>Entrar no painel mobile</Text>
         <Text style={styles.subtitle}>Use o mesmo login da versão web.</Text>
 
@@ -363,6 +531,7 @@ function LoginScreen() {
 function ProfessionalArea({ session }: { session: Session }) {
   const [activeTab, setActiveTab] = useState<AppTab>("dashboard");
   const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
+  const [dashboardRefreshSignal, setDashboardRefreshSignal] = useState(0);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState("");
   const theme = APP_THEMES[themeMode];
@@ -384,31 +553,83 @@ function ProfessionalArea({ session }: { session: Session }) {
     prepareProfile();
   }, [session.user]);
 
+  useEffect(() => {
+    const setupNotifications = async () => {
+      if (Platform.OS === "web") return;
+      if (Platform.OS === "android") {
+        await Notifications.setNotificationChannelAsync("default", {
+          name: "default",
+          importance: Notifications.AndroidImportance.HIGH,
+        });
+      }
+      const current = await Notifications.getPermissionsAsync();
+      if (current.status !== "granted") {
+        await Notifications.requestPermissionsAsync();
+      }
+    };
+
+    const registerPushToken = async () => {
+      if (Platform.OS === "web") return;
+      const permission = await Notifications.getPermissionsAsync();
+      const status = permission.granted
+        ? "granted"
+        : (await Notifications.requestPermissionsAsync()).status;
+
+      if (status !== "granted") return;
+
+      try {
+        const tokenResult = await Notifications.getExpoPushTokenAsync({
+          projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
+        });
+        const token = tokenResult.data;
+        if (!token) return;
+
+        const { error } = await supabase
+          .from("profiles")
+          .update({ push_token: token })
+          .eq("id", session.user.id);
+
+        if (error) {
+          console.warn("Falha ao salvar push token:", error.message);
+        }
+      } catch (error) {
+        console.warn("Falha ao registrar push token:", error);
+      }
+    };
+
+    setupNotifications();
+    registerPushToken();
+  }, [session.user.id]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
 
   return (
     <SafeAreaView style={[styles.dashboardContainer, { backgroundColor: theme.background }]}>
+      <AnimatedBackground mode={themeMode} />
       <StatusBar style={themeMode === "dark" ? "light" : "dark"} />
       <View style={[styles.topHeader, { borderBottomColor: theme.border }]}>
         <View>
-          <Text style={[styles.brand, { color: theme.accent }]}>Agenda App</Text>
-          <Text style={styles.heroGreeting}>
-            <Text style={[styles.heroGreetingPrimary, { color: themeMode === "dark" ? "#f8f4ef" : "#2f231f" }]}>
-              Olá,{" "}
-            </Text>
-            <Text style={[styles.heroGreetingAccent, { color: theme.accent }]}>{userFirstName}</Text>
-          </Text>
+          <Text style={[styles.brand, { color: theme.accent }]}>{`v${APP_VERSION}`}</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Agenda Online</Text>
         </View>
-        <Pressable
-          onPress={() => setThemeMode((current) => (current === "dark" ? "light" : "dark"))}
-          style={[styles.themeToggleButton, { borderColor: theme.border, backgroundColor: theme.card }]}
-        >
-          <Text style={[styles.themeToggleButtonText, { color: theme.textPrimary }]}>
-            {themeMode === "dark" ? "☀️ Claro" : "🌙 Escuro"}
-          </Text>
-        </Pressable>
+        <View style={styles.headerButtonsRow}>
+          <Pressable
+            onPress={() => setDashboardRefreshSignal((current) => current + 1)}
+            style={[styles.themeToggleButton, { borderColor: theme.border, backgroundColor: theme.card }]}
+          >
+            <Text style={[styles.themeToggleButtonText, { color: theme.textPrimary }]}>↻ Atualizar</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setThemeMode((current) => (current === "dark" ? "light" : "dark"))}
+            style={[styles.themeToggleButton, { borderColor: theme.border, backgroundColor: theme.card }]}
+          >
+            <Text style={[styles.themeToggleButtonText, { color: theme.textPrimary }]}>
+              {themeMode === "dark" ? "◐ Claro" : "◐ Escuro"}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {profileLoading ? (
@@ -420,11 +641,11 @@ function ProfessionalArea({ session }: { session: Session }) {
         <Text style={styles.errorBanner}>{profileError}</Text>
       ) : (
         <View style={styles.mainContent}>
-          <View style={styles.tabsContainer}>
+          <View style={[styles.tabsContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-            persistentScrollbar={false}
+              persistentScrollbar={false}
               style={styles.tabsScroll}
               contentContainerStyle={styles.tabsRow}
             >
@@ -468,6 +689,8 @@ function ProfessionalArea({ session }: { session: Session }) {
                 professionalId={session.user.id}
                 onOpenAgenda={() => setActiveTab("agenda")}
                 theme={theme}
+                displayName={userFirstName}
+                refreshSignal={dashboardRefreshSignal}
               />
             ) : null}
             {activeTab === "services" ? (
@@ -502,10 +725,14 @@ function DashboardScreen({
   professionalId,
   onOpenAgenda,
   theme,
+  displayName,
+  refreshSignal,
 }: {
   professionalId: string;
   onOpenAgenda: () => void;
   theme: ThemeTokens;
+  displayName: string;
+  refreshSignal: number;
 }) {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -531,8 +758,8 @@ function DashboardScreen({
         .eq("professional_id", professionalId)
         .eq("is_active", true),
       supabase
-        .from("appointments")
-        .select("id, customer_name, start_time, status, service:services(name, price)")
+      .from("appointments")
+      .select("id, customer_name, start_time, end_time, status, service:services(name, price)")
         .eq("professional_id", professionalId)
         .eq("appointment_date", today)
         .order("start_time", { ascending: true })
@@ -550,6 +777,7 @@ function DashboardScreen({
     const normalizedToday = ((todayRes.data ?? []) as DashboardAppointmentSelectRow[]).map((row) => ({
       id: row.id,
       start_time: row.start_time,
+      end_time: row.end_time,
       status: row.status,
       customer_name: row.customer_name,
       service: Array.isArray(row.service) ? (row.service[0] ?? null) : row.service,
@@ -577,7 +805,7 @@ function DashboardScreen({
 
   useEffect(() => {
     loadDashboard();
-  }, [professionalId]);
+  }, [professionalId, refreshSignal]);
 
   const greeting = (() => {
     const hour = new Date().getHours();
@@ -593,7 +821,17 @@ function DashboardScreen({
     year: "numeric",
   }).format(new Date());
 
-  const firstAppointment = todayAppointments[0] ?? null;
+  const firstAppointment = useMemo(() => {
+    const now = new Date();
+    return (
+      todayAppointments.find((appointment) => {
+        const activeStatus =
+          appointment.status === "agendado" || appointment.status === "confirmado";
+        if (!activeStatus) return false;
+        return combineDateAndTime(toIsoDate(), appointment.end_time) > now;
+      }) ?? null
+    );
+  }, [todayAppointments]);
   const bookingCode = professionalId;
   const bookingLink = `${webAppBaseUrl}/booking/${bookingCode}`;
 
@@ -609,19 +847,17 @@ function DashboardScreen({
 
   return (
     <View style={styles.sectionContainer}>
-      <View style={[styles.dashboardHeroCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <View
+        style={[
+          styles.dashboardFeatureCard,
+          { borderColor: theme.border, backgroundColor: theme.accent },
+        ]}
+      >
         <View>
-          <Text style={[styles.dashboardGreeting, { color: theme.textPrimary }]}>{greeting}</Text>
-          <Text style={[styles.dashboardDate, { color: theme.textSecondary }]}>{longDate}</Text>
+          <Text style={[styles.dashboardFeatureGreeting, { color: "#f8f8f8" }]}>{greeting}</Text>
+          <Text style={[styles.dashboardFeatureTitle, { color: "#f8f8f8" }]}>{displayName}</Text>
+          <Text style={[styles.dashboardDate, { color: "#e8f0f3" }]}>{longDate}</Text>
         </View>
-        <Pressable
-          onPress={loadDashboard}
-          style={[styles.dashboardRefreshBadge, { backgroundColor: theme.accentSoft, borderColor: theme.border }]}
-        >
-          <Text style={[styles.dashboardRefreshBadgeText, { color: theme.accent }]}>
-            {loading ? "..." : "↻"}
-          </Text>
-        </Pressable>
       </View>
 
       {errorMessage ? <Text style={styles.errorBanner}>{errorMessage}</Text> : null}
@@ -805,11 +1041,49 @@ function ServicesScreen({ professionalId, theme }: { professionalId: string; the
   const handleDelete = async (serviceId: string) => {
     setMessage("");
     setError("");
-    const { error: deleteError } = await supabase.from("services").delete().eq("id", serviceId);
+
+    const { count: linkedAppointments, error: linkedError } = await supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("professional_id", professionalId)
+      .eq("service_id", serviceId);
+
+    if (linkedError) {
+      setError(linkedError.message);
+      return;
+    }
+
+    if ((linkedAppointments ?? 0) > 0) {
+      const { error: updateError } = await supabase
+        .from("services")
+        .update({ is_active: false })
+        .eq("id", serviceId)
+        .eq("professional_id", professionalId);
+
+      if (updateError) {
+        setError(updateError.message);
+        return;
+      }
+
+      setServices((current) =>
+        current.map((item) => (item.id === serviceId ? { ...item, is_active: false } : item))
+      );
+      setMessage("Serviço com agendamentos não pode ser excluído. Ele foi desativado.");
+      return;
+    }
+
+    const { error: deleteError } = await supabase
+      .from("services")
+      .delete()
+      .eq("id", serviceId)
+      .eq("professional_id", professionalId);
+
     if (deleteError) {
       setError(deleteError.message);
       return;
     }
+
+    setMessage("Serviço excluído.");
     setServices((current) => current.filter((item) => item.id !== serviceId));
   };
 
@@ -1021,6 +1295,8 @@ function AgendaScreen({ professionalId, theme }: { professionalId: string; theme
       const bookedRows = (bookedRes.data ?? []) as BookedRange[];
 
       const generatedSlots: RescheduleSlotOption[] = [];
+      const now = new Date();
+      const isRescheduleDateToday = rescheduleDate === toIsoDate();
       for (const row of availabilityRows) {
         const startWindow = combineDateAndTime(rescheduleDate, row.start_time);
         const endWindow = combineDateAndTime(rescheduleDate, row.end_time);
@@ -1031,6 +1307,10 @@ function AgendaScreen({ professionalId, theme }: { professionalId: string; theme
           const slotStart = new Date(cursor);
           const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60 * 1000);
           if (slotEnd > endWindow) break;
+          if (isRescheduleDateToday && slotStart <= now) {
+            cursor = new Date(cursor.getTime() + stepMinutes * 60 * 1000);
+            continue;
+          }
 
           const overlapsBlocked = blockedRows.some((blocked) =>
             hasOverlap(slotStart, slotEnd, new Date(blocked.start_at), new Date(blocked.end_at))
@@ -1091,26 +1371,32 @@ function AgendaScreen({ professionalId, theme }: { professionalId: string; theme
     );
 
     if (status === "confirmado") {
-      const whatsappUrl = buildWhatsappUrlForAppointment(appointment);
-
-      if (!whatsappUrl) {
-        setSuccessMessage("Status confirmado, mas telefone da cliente inválido para WhatsApp.");
-        setUpdatingId(null);
-        return;
-      }
-
-      const canOpen = await Linking.canOpenURL(whatsappUrl);
-      if (canOpen) {
-        await Linking.openURL(whatsappUrl);
-        setSuccessMessage("Status confirmado e WhatsApp aberto para envio da mensagem.");
-      } else {
-        setSuccessMessage("Status confirmado, mas não foi possível abrir o WhatsApp.");
-      }
+      setSuccessMessage("Status confirmado. Use o botão WhatsApp para avisar a cliente.");
     } else {
       setSuccessMessage("Status atualizado com sucesso.");
     }
 
     setUpdatingId(null);
+  };
+
+  const handleOpenWhatsapp = async (appointment: AppointmentRow) => {
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    const whatsappUrl = buildWhatsappUrlForAppointment(appointment);
+    if (!whatsappUrl) {
+      setErrorMessage("Telefone da cliente invalido para WhatsApp.");
+      return;
+    }
+
+    const canOpen = await Linking.canOpenURL(whatsappUrl);
+    if (!canOpen) {
+      setErrorMessage("Nao foi possivel abrir o WhatsApp neste dispositivo.");
+      return;
+    }
+
+    await Linking.openURL(whatsappUrl);
+    setSuccessMessage("WhatsApp aberto para envio da mensagem.");
   };
 
   const handleDateChange = (event: DateTimePickerEvent, pickedDate?: Date) => {
@@ -1246,6 +1532,12 @@ function AgendaScreen({ professionalId, theme }: { professionalId: string; theme
                   onPress={() => handleStartReschedule(appointment)}
                 >
                   <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Reagendar</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.smallButton, { backgroundColor: theme.card, borderColor: theme.border }]}
+                  onPress={() => handleOpenWhatsapp(appointment)}
+                >
+                  <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>WhatsApp</Text>
                 </Pressable>
               </View>
 
@@ -1638,6 +1930,10 @@ function BlockedTimesScreen({ professionalId, theme }: { professionalId: string;
   const [startTime, setStartTime] = useState(startDefault.time);
   const [endDate, setEndDate] = useState(endDefault.date);
   const [endTime, setEndTime] = useState(endDefault.time);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -1708,38 +2004,110 @@ function BlockedTimesScreen({ professionalId, theme }: { professionalId: string;
     setRows((current) => current.filter((item) => item.id !== rowId));
   };
 
+  const handleStartDateChange = (event: DateTimePickerEvent, pickedDate?: Date) => {
+    setShowStartDatePicker(false);
+    if (event.type !== "set" || !pickedDate) return;
+    setStartDate(toIsoDate(pickedDate));
+  };
+
+  const handleStartTimeChange = (event: DateTimePickerEvent, pickedDate?: Date) => {
+    setShowStartTimePicker(false);
+    if (event.type !== "set" || !pickedDate) return;
+    setStartTime(toDateAndTimeInput(pickedDate).time);
+  };
+
+  const handleEndDateChange = (event: DateTimePickerEvent, pickedDate?: Date) => {
+    setShowEndDatePicker(false);
+    if (event.type !== "set" || !pickedDate) return;
+    setEndDate(toIsoDate(pickedDate));
+  };
+
+  const handleEndTimeChange = (event: DateTimePickerEvent, pickedDate?: Date) => {
+    setShowEndTimePicker(false);
+    if (event.type !== "set" || !pickedDate) return;
+    setEndTime(toDateAndTimeInput(pickedDate).time);
+  };
+
   return (
     <View style={styles.sectionContainer}>
       <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Novo bloqueio</Text>
-        <TextInput
-          value={startDate}
-          onChangeText={setStartDate}
-          placeholder="Data início (YYYY-MM-DD)"
-          placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
-        />
-        <TextInput
-          value={startTime}
-          onChangeText={setStartTime}
-          placeholder="Hora início (HH:MM)"
-          placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
-        />
-        <TextInput
-          value={endDate}
-          onChangeText={setEndDate}
-          placeholder="Data fim (YYYY-MM-DD)"
-          placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
-        />
-        <TextInput
-          value={endTime}
-          onChangeText={setEndTime}
-          placeholder="Hora fim (HH:MM)"
-          placeholderTextColor={theme.textSecondary}
-          style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
-        />
+        <Pressable
+          onPress={() => setShowStartDatePicker(true)}
+          style={[
+            styles.datePickerButton,
+            { backgroundColor: theme.background, borderColor: theme.border },
+          ]}
+        >
+          <Text style={[styles.datePickerButtonLabel, { color: theme.textSecondary }]}>Data início</Text>
+          <Text style={[styles.datePickerButtonValue, { color: theme.textPrimary }]}>
+            {formatDateBr(startDate)}
+          </Text>
+        </Pressable>
+        {showStartDatePicker ? (
+          <DateTimePicker
+            mode="date"
+            value={new Date(`${startDate}T00:00:00`)}
+            onChange={handleStartDateChange}
+          />
+        ) : null}
+
+        <Pressable
+          onPress={() => setShowStartTimePicker(true)}
+          style={[
+            styles.datePickerButton,
+            { backgroundColor: theme.background, borderColor: theme.border },
+          ]}
+        >
+          <Text style={[styles.datePickerButtonLabel, { color: theme.textSecondary }]}>Hora início</Text>
+          <Text style={[styles.datePickerButtonValue, { color: theme.textPrimary }]}>{startTime}</Text>
+        </Pressable>
+        {showStartTimePicker ? (
+          <DateTimePicker
+            mode="time"
+            value={parseDateTimeInput(startDate, startTime) ?? new Date(`${startDate}T00:00:00`)}
+            onChange={handleStartTimeChange}
+          />
+        ) : null}
+
+        <Pressable
+          onPress={() => setShowEndDatePicker(true)}
+          style={[
+            styles.datePickerButton,
+            { backgroundColor: theme.background, borderColor: theme.border },
+          ]}
+        >
+          <Text style={[styles.datePickerButtonLabel, { color: theme.textSecondary }]}>Data fim</Text>
+          <Text style={[styles.datePickerButtonValue, { color: theme.textPrimary }]}>
+            {formatDateBr(endDate)}
+          </Text>
+        </Pressable>
+        {showEndDatePicker ? (
+          <DateTimePicker
+            mode="date"
+            value={new Date(`${endDate}T00:00:00`)}
+            onChange={handleEndDateChange}
+          />
+        ) : null}
+
+        <Pressable
+          onPress={() => setShowEndTimePicker(true)}
+          style={[
+            styles.datePickerButton,
+            { backgroundColor: theme.background, borderColor: theme.border },
+          ]}
+        >
+          <Text style={[styles.datePickerButtonLabel, { color: theme.textSecondary }]}>Hora fim</Text>
+          <Text style={[styles.datePickerButtonValue, { color: theme.textPrimary }]}>{endTime}</Text>
+        </Pressable>
+        {showEndTimePicker ? (
+          <DateTimePicker
+            mode="time"
+            value={parseDateTimeInput(endDate, endTime) ?? new Date(`${endDate}T00:00:00`)}
+            onChange={handleEndTimeChange}
+          />
+        ) : null}
+
         <TextInput
           value={reason}
           onChangeText={setReason}
@@ -1802,6 +2170,32 @@ const styles = StyleSheet.create({
     backgroundColor: "#f7f2ef",
     padding: 20,
   },
+  animatedBackgroundLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden",
+  },
+  animatedBlob: {
+    position: "absolute",
+    borderRadius: 999,
+  },
+  animatedBlobOne: {
+    width: 290,
+    height: 290,
+    top: -90,
+    right: -70,
+  },
+  animatedBlobTwo: {
+    width: 320,
+    height: 320,
+    bottom: 90,
+    left: -110,
+  },
+  animatedBlobThree: {
+    width: 240,
+    height: 240,
+    bottom: -70,
+    right: 20,
+  },
   authCard: {
     width: "100%",
     maxWidth: 420,
@@ -1811,6 +2205,7 @@ const styles = StyleSheet.create({
     borderColor: "#e8d7cf",
     padding: 20,
     gap: 10,
+    zIndex: 2,
   },
   dashboardContainer: {
     flex: 1,
@@ -1818,28 +2213,39 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   topHeader: {
-    minHeight: 64,
+    minHeight: 70,
     justifyContent: "center",
     gap: 2,
-    borderBottomWidth: 1,
-    paddingBottom: 6,
+    borderBottomWidth: 0,
+    paddingBottom: 10,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    zIndex: 2,
+  },
+  headerButtonsRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
   },
   mainContent: {
     flex: 1,
+    zIndex: 2,
   },
   tabsContainer: {
-    minHeight: 52,
+    minHeight: 56,
     justifyContent: "center",
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 8,
+    marginBottom: 4,
   },
   contentScroll: {
     flex: 1,
   },
   dashboardScrollContent: {
-    gap: 12,
-    paddingBottom: 32,
+    gap: 14,
+    paddingBottom: 36,
   },
   actionsRow: {
     flexDirection: "row",
@@ -1852,12 +2258,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   tabsScroll: {
-    marginBottom: 2,
+    marginBottom: 0,
   },
   tabsRow: {
     flexDirection: "row",
     gap: 8,
-    paddingVertical: 2,
+    paddingVertical: 6,
     alignItems: "center",
   },
   tabButton: {
@@ -1865,8 +2271,8 @@ const styles = StyleSheet.create({
     borderColor: "#d8c5bc",
     borderRadius: 999,
     backgroundColor: "#fff",
-    paddingHorizontal: 12,
-    minHeight: 40,
+    paddingHorizontal: 14,
+    minHeight: 38,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -1896,10 +2302,10 @@ const styles = StyleSheet.create({
   card: {
     borderWidth: 1,
     borderColor: "#e8d7cf",
-    borderRadius: 14,
+    borderRadius: 18,
     backgroundColor: "#fffdfb",
-    padding: 14,
-    gap: 8,
+    padding: 16,
+    gap: 10,
   },
   cardTitle: {
     fontSize: 16,
@@ -1910,10 +2316,10 @@ const styles = StyleSheet.create({
   listCard: {
     borderWidth: 1,
     borderColor: "#edded7",
-    borderRadius: 12,
+    borderRadius: 16,
     backgroundColor: "#fff",
-    padding: 10,
-    gap: 6,
+    padding: 12,
+    gap: 8,
   },
   listRow: {
     flexDirection: "row",
@@ -1933,9 +2339,9 @@ const styles = StyleSheet.create({
   smallButton: {
     borderWidth: 1,
     borderColor: "#d8c5bc",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     backgroundColor: "#fff",
   },
   smallButtonText: {
@@ -1946,9 +2352,9 @@ const styles = StyleSheet.create({
   smallDangerButton: {
     borderWidth: 1,
     borderColor: "#fecdca",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     backgroundColor: "#fee4e2",
   },
   smallDangerButtonText: {
@@ -1999,6 +2405,23 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  dashboardFeatureCard: {
+    borderWidth: 1,
+    borderRadius: 24,
+    backgroundColor: "#488399",
+    padding: 18,
+    gap: 12,
+  },
+  dashboardFeatureGreeting: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  dashboardFeatureTitle: {
+    fontSize: 38,
+    lineHeight: 42,
+    fontWeight: "500",
+    fontFamily: "serif",
+  },
   dashboardGreeting: {
     color: "#1f2937",
     fontSize: 30,
@@ -2010,21 +2433,6 @@ const styles = StyleSheet.create({
     color: "#7c8392",
     fontSize: 13,
     textTransform: "capitalize",
-  },
-  dashboardRefreshBadge: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e6e8f0",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  dashboardRefreshBadgeText: {
-    color: "#7d6af6",
-    fontSize: 17,
-    fontWeight: "700",
   },
   sectionHeaderRow: {
     flexDirection: "row",
@@ -2057,8 +2465,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   todayStatusBadge: {
-    backgroundColor: "#e5f3ff",
-    color: "#4f85d9",
+    backgroundColor: "#f1bebe",
+    color: "#6b3f3f",
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -2066,8 +2474,8 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   todayTimeBadge: {
-    backgroundColor: "#f4f5f7",
-    color: "#6d7482",
+    backgroundColor: "#f4d38a",
+    color: "#5f512f",
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -2082,12 +2490,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   todayServiceName: {
-    color: "#b35c9b",
+    color: "#ea9393",
     fontSize: 13,
     fontWeight: "700",
   },
   todayPrice: {
-    color: "#31b78f",
+    color: "#488399",
     fontSize: 22,
     fontWeight: "800",
     marginTop: 2,
@@ -2102,35 +2510,35 @@ const styles = StyleSheet.create({
     width: "48.5%",
     borderWidth: 1,
     borderColor: "#edf0f5",
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: "#ffffff",
-    paddingVertical: 12,
-    paddingHorizontal: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
     gap: 4,
   },
   summaryValueBlue: {
     fontSize: 28,
     lineHeight: 30,
     fontWeight: "800",
-    color: "#4f8df7",
+    color: "#488399",
   },
   summaryValueYellow: {
     fontSize: 28,
     lineHeight: 30,
     fontWeight: "800",
-    color: "#f5b300",
+    color: "#f4d38a",
   },
   summaryValueGreen: {
     fontSize: 28,
     lineHeight: 30,
     fontWeight: "800",
-    color: "#31b78f",
+    color: "#ea9393",
   },
   summaryValueGray: {
     fontSize: 28,
     lineHeight: 30,
     fontWeight: "800",
-    color: "#9aa1ac",
+    color: "#f1bebe",
   },
   summaryLabel: {
     color: "#687588",
@@ -2194,19 +2602,19 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: "#e8d7cf",
-    borderRadius: 12,
+    borderRadius: 14,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 11,
     fontSize: 15,
     backgroundColor: "#fff",
   },
   datePickerButton: {
     borderWidth: 1,
     borderColor: "#e8d7cf",
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: "#fff",
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 11,
     gap: 2,
   },
   datePickerButtonLabel: {
@@ -2225,8 +2633,8 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: "#2f2725",
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 14,
+    paddingVertical: 13,
     alignItems: "center",
   },
   buttonDisabled: {

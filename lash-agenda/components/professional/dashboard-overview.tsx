@@ -42,15 +42,15 @@ const formatDateBr = (dateInput: string) => {
 
 const getStatusChip = (status: AppointmentStatus) => {
   if (status === "confirmado") {
-    return "bg-green-100 text-green-800";
+    return "bg-[#EDE8FF] text-[#5B3CC4]";
   }
   if (status === "agendado") {
-    return "bg-amber-100 text-amber-800";
+    return "bg-[#F3F0FF] text-[#6C47DE]";
   }
   if (status === "concluido") {
-    return "bg-blue-100 text-blue-800";
+    return "bg-[#EEF0F7] text-[#4C5568]";
   }
-  return "bg-neutral-200 text-neutral-700";
+  return "bg-[#F8EAF2] text-[#944A70]";
 };
 
 export function DashboardOverview() {
@@ -166,13 +166,13 @@ export function DashboardOverview() {
   return (
     <div className="grid gap-4 md:grid-cols-6">
       <article className="hero-shell md:col-span-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#7f5e55]">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8B5CF6]">
           Painel da profissional
         </p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="title-display text-2xl font-bold">Visao geral do seu dia</h2>
-            <p className="mt-1 text-sm text-[#664f49]">
+            <p className="mt-1 text-sm text-[#6E7380]">
               Acompanhe agendamentos, serviços e compartilhe seu link de booking.
             </p>
           </div>
@@ -188,17 +188,17 @@ export function DashboardOverview() {
       </article>
 
       <article className="elevated-card p-4 md:col-span-2">
-        <h2 className="text-sm font-medium text-[#6f5852]">Agendamentos hoje</h2>
-        <p className="mt-2 text-3xl font-bold text-[#2f231f]">{loading ? "--" : todayAppointmentsCount}</p>
+        <h2 className="text-sm font-medium text-[#6E7380]">Agendamentos hoje</h2>
+        <p className="mt-2 text-3xl font-bold text-[#1F2430]">{loading ? "--" : todayAppointmentsCount}</p>
       </article>
 
       <article className="elevated-card p-4 md:col-span-2">
-        <h2 className="text-sm font-medium text-[#6f5852]">Serviços ativos</h2>
-        <p className="mt-2 text-3xl font-bold text-[#2f231f]">{loading ? "--" : activeServicesCount}</p>
+        <h2 className="text-sm font-medium text-[#6E7380]">Serviços ativos</h2>
+        <p className="mt-2 text-3xl font-bold text-[#1F2430]">{loading ? "--" : activeServicesCount}</p>
       </article>
 
       <article className="elevated-card p-4 md:col-span-2">
-        <h2 className="text-sm font-medium text-[#6f5852]">Status do sistema</h2>
+        <h2 className="text-sm font-medium text-[#6E7380]">Status do sistema</h2>
         <p
           className={`mt-2 text-base font-semibold ${
             errorMessage ? "text-amber-700" : "text-green-700"
@@ -209,16 +209,16 @@ export function DashboardOverview() {
       </article>
 
       <article className="elevated-card p-4 md:col-span-6">
-        <h2 className="text-sm font-medium text-[#6f5852]">Proximos agendamentos</h2>
+        <h2 className="text-sm font-medium text-[#6E7380]">Proximos agendamentos</h2>
 
         {errorMessage ? (
           <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
             {errorMessage}
           </p>
         ) : loading ? (
-          <p className="mt-3 text-sm text-[#6d5a54]">Carregando dados...</p>
+          <p className="mt-3 text-sm text-[#6E7380]">Carregando dados...</p>
         ) : upcomingAppointments.length === 0 ? (
-          <div className="muted-card mt-3 px-4 py-3 text-sm text-[#6d5a54]">
+          <div className="muted-card mt-3 px-4 py-3 text-sm text-[#6E7380]">
             Nenhum proximo agendamento.
           </div>
         ) : (
@@ -230,11 +230,11 @@ export function DashboardOverview() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-semibold text-[#2f231f]">
+                    <p className="font-semibold text-[#1F2430]">
                       {formatDateBr(appointment.appointment_date)}{" "}
                       {appointment.start_time.slice(0, 5)}
                     </p>
-                    <p className="text-[#5d4a44]">
+                    <p className="text-[#6E7380]">
                       {appointment.customer_name} • {appointment.service?.name ?? "Serviço"}
                     </p>
                   </div>
