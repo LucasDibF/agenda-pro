@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import * as Clipboard from "expo-clipboard";
+import * as Notifications from "expo-notifications";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import {
   ActivityIndicator,
   Animated,
   Easing,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +19,14 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./src/lib/supabase";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 type AppointmentStatus = "agendado" | "confirmado" | "cancelado" | "concluido";
 type AppTab = "dashboard" | "services" | "agenda" | "availability" | "blocked";
@@ -542,6 +552,54 @@ function ProfessionalArea({ session }: { session: Session }) {
 
     prepareProfile();
   }, [session.user]);
+
+  useEffect(() => {
+    const setupNotifications = async () => {
+      if (Platform.OS === "web") return;
+      if (Platform.OS === "android") {
+        await Notifications.setNotificationChannelAsync("default", {
+          name: "default",
+          importance: Notifications.AndroidImportance.HIGH,
+        });
+      }
+      const current = await Notifications.getPermissionsAsync();
+      if (current.status !== "granted") {
+        await Notifications.requestPermissionsAsync();
+      }
+    };
+
+    const registerPushToken = async () => {
+      if (Platform.OS === "web") return;
+      const permission = await Notifications.getPermissionsAsync();
+      const status = permission.granted
+        ? "granted"
+        : (await Notifications.requestPermissionsAsync()).status;
+
+      if (status !== "granted") return;
+
+      try {
+        const tokenResult = await Notifications.getExpoPushTokenAsync({
+          projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
+        });
+        const token = tokenResult.data;
+        if (!token) return;
+
+        const { error } = await supabase
+          .from("profiles")
+          .update({ push_token: token })
+          .eq("id", session.user.id);
+
+        if (error) {
+          console.warn("Falha ao salvar push token:", error.message);
+        }
+      } catch (error) {
+        console.warn("Falha ao registrar push token:", error);
+      }
+    };
+
+    setupNotifications();
+    registerPushToken();
+  }, [session.user.id]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -1313,26 +1371,32 @@ function AgendaScreen({ professionalId, theme }: { professionalId: string; theme
     );
 
     if (status === "confirmado") {
-      const whatsappUrl = buildWhatsappUrlForAppointment(appointment);
-
-      if (!whatsappUrl) {
-        setSuccessMessage("Status confirmado, mas telefone da cliente inválido para WhatsApp.");
-        setUpdatingId(null);
-        return;
-      }
-
-      const canOpen = await Linking.canOpenURL(whatsappUrl);
-      if (canOpen) {
-        await Linking.openURL(whatsappUrl);
-        setSuccessMessage("Status confirmado e WhatsApp aberto para envio da mensagem.");
-      } else {
-        setSuccessMessage("Status confirmado, mas não foi possível abrir o WhatsApp.");
-      }
+      setSuccessMessage("Status confirmado. Use o botão WhatsApp para avisar a cliente.");
     } else {
       setSuccessMessage("Status atualizado com sucesso.");
     }
 
     setUpdatingId(null);
+  };
+
+  const handleOpenWhatsapp = async (appointment: AppointmentRow) => {
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    const whatsappUrl = buildWhatsappUrlForAppointment(appointment);
+    if (!whatsappUrl) {
+      setErrorMessage("Telefone da cliente invalido para WhatsApp.");
+      return;
+    }
+
+    const canOpen = await Linking.canOpenURL(whatsappUrl);
+    if (!canOpen) {
+      setErrorMessage("Nao foi possivel abrir o WhatsApp neste dispositivo.");
+      return;
+    }
+
+    await Linking.openURL(whatsappUrl);
+    setSuccessMessage("WhatsApp aberto para envio da mensagem.");
   };
 
   const handleDateChange = (event: DateTimePickerEvent, pickedDate?: Date) => {
@@ -1468,6 +1532,12 @@ function AgendaScreen({ professionalId, theme }: { professionalId: string; theme
                   onPress={() => handleStartReschedule(appointment)}
                 >
                   <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Reagendar</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.smallButton, { backgroundColor: theme.card, borderColor: theme.border }]}
+                  onPress={() => handleOpenWhatsapp(appointment)}
+                >
+                  <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>WhatsApp</Text>
                 </Pressable>
               </View>
 

@@ -60,12 +60,7 @@ const normalizeTime = (timeInput: string) => timeInput.slice(0, 5);
 const combineDateAndTime = (dateInput: string, timeInput: string) =>
   new Date(`${dateInput}T${normalizeTime(timeInput)}:00`);
 
-const hasOverlap = (
-  aStart: Date,
-  aEnd: Date,
-  bStart: Date,
-  bEnd: Date
-) => aStart < bEnd && bStart < aEnd;
+const hasOverlap = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) => aStart < bEnd && bStart < aEnd;
 
 const formatCurrencyBRL = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
@@ -195,8 +190,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
 
   useEffect(() => {
     const loadDateData = async () => {
-      if (!professionalId) return;
-      if (!selectedDate) return;
+      if (!professionalId || !selectedDate) return;
 
       setErrorMessage("");
 
@@ -239,7 +233,6 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
 
     const selectedDateObject = new Date(`${selectedDate}T00:00:00`);
     const weekday = selectedDateObject.getDay();
-
     const dayAvailability = availabilityRows.filter((row) => row.weekday === weekday);
     if (dayAvailability.length === 0) return [];
 
@@ -265,14 +258,8 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
         }
 
         const overlapsBlocked = blockedRows.some((blocked) =>
-          hasOverlap(
-            slotStart,
-            slotEnd,
-            new Date(blocked.start_at),
-            new Date(blocked.end_at)
-          )
+          hasOverlap(slotStart, slotEnd, new Date(blocked.start_at), new Date(blocked.end_at))
         );
-
         const overlapsBooked = bookedSlots.some((booked) =>
           hasOverlap(
             slotStart,
@@ -302,7 +289,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     setSuccessMessage("");
 
     if (!professionalId || !selectedService || !selectedDate || !selectedStartTime) {
-      setErrorMessage("Selecione servi?o, data e hor?rio.");
+      setErrorMessage("Selecione servico, data e horario.");
       return;
     }
 
@@ -319,18 +306,22 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
 
     setSubmitting(true);
 
-    const { error } = await supabase.from("appointments").insert({
-      professional_id: professionalId,
-      service_id: selectedService.id,
-      customer_name: form.customerName.trim(),
-      customer_phone: form.customerPhone.trim(),
-      customer_email: form.customerEmail.trim(),
-      appointment_date: selectedDate,
-      start_time: selectedSlot.startTime,
-      end_time: selectedSlot.endTime,
-      notes: form.notes.trim() || null,
-      status: "agendado",
-    });
+    const { data: insertedAppointment, error } = await supabase
+      .from("appointments")
+      .insert({
+        professional_id: professionalId,
+        service_id: selectedService.id,
+        customer_name: form.customerName.trim(),
+        customer_phone: form.customerPhone.trim(),
+        customer_email: form.customerEmail.trim(),
+        appointment_date: selectedDate,
+        start_time: selectedSlot.startTime,
+        end_time: selectedSlot.endTime,
+        notes: form.notes.trim() || null,
+        status: "agendado",
+      })
+      .select("id")
+      .single();
 
     if (error) {
       setErrorMessage(error.message);
@@ -339,20 +330,26 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     }
 
     setSuccessMessage("Agendamento confirmado com sucesso!");
-    setForm({
-      customerName: "",
-      customerPhone: "",
-      customerEmail: "",
-      notes: "",
-    });
+    setForm({ customerName: "", customerPhone: "", customerEmail: "", notes: "" });
     setSelectedStartTime("");
+
+    if (insertedAppointment?.id) {
+      fetch("/api/notify-booking", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ appointmentId: insertedAppointment.id }),
+      }).catch(() => {
+        // Do not block booking confirmation if notification fails.
+      });
+    }
 
     const { data: refreshedBooked } = await supabase.rpc("get_booked_slots", {
       p_professional_id: professionalId,
       p_date: selectedDate,
     });
     setBookedSlots((refreshedBooked ?? []) as BookedSlotRow[]);
-
     setSubmitting(false);
   };
 
@@ -368,8 +365,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     <section className="space-y-5">
       {services.length === 0 ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50/85 px-3 py-2 text-sm text-amber-800">
-          Esta URL nao possui servi?os ativos. Confirme se voce abriu o link correto da
-          profissional.
+          Esta URL nao possui servicos ativos. Confirme se voce abriu o link correto da profissional.
         </p>
       ) : null}
 
@@ -380,11 +376,11 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
       ) : null}
 
       <div className="elevated-card p-5">
-        <h2 className="text-lg font-semibold text-[var(--ink-strong)]">1) Escolha o servi?o</h2>
+        <h2 className="text-lg font-semibold text-[var(--ink-strong)]">1) Escolha o servico</h2>
         <div className="mt-3 grid gap-3">
           {services.length === 0 ? (
             <p className="text-sm text-[var(--foreground)]/75">
-              Esta profissional ainda nao possui servi?os ativos.
+              Esta profissional ainda nao possui servicos ativos.
             </p>
           ) : (
             services.map((service) => (
@@ -400,7 +396,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
               >
                 <p className="font-semibold text-[var(--ink-strong)]">{service.name}</p>
                 <p className="text-sm text-[var(--foreground)]/75">
-                  {service.duration_minutes} min • {formatCurrencyBRL(service.price)}
+                  {service.duration_minutes} min - {formatCurrencyBRL(service.price)}
                 </p>
                 {service.description ? (
                   <p className="mt-1 text-sm text-[var(--foreground)]/70">{service.description}</p>
@@ -458,9 +454,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
             <input
               type="text"
               value={form.customerName}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, customerName: event.target.value }))
-              }
+              onChange={(event) => setForm((prev) => ({ ...prev, customerName: event.target.value }))}
               required
               className="input-shell"
             />
@@ -471,9 +465,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
             <input
               type="tel"
               value={form.customerPhone}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, customerPhone: event.target.value }))
-              }
+              onChange={(event) => setForm((prev) => ({ ...prev, customerPhone: event.target.value }))}
               required
               className="input-shell"
             />
@@ -484,9 +476,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
             <input
               type="email"
               value={form.customerEmail}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, customerEmail: event.target.value }))
-              }
+              onChange={(event) => setForm((prev) => ({ ...prev, customerEmail: event.target.value }))}
               required
               className="input-shell"
             />
