@@ -11,10 +11,12 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StyleProp,
   StyleSheet,
   Text,
   TextInput,
   View,
+  ViewStyle,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import type { Session, User } from "@supabase/supabase-js";
@@ -22,7 +24,8 @@ import { supabase } from "./src/lib/supabase";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -47,6 +50,8 @@ type ThemeTokens = {
   tabSelectedBg: string;
   tabSelectedText: string;
 };
+
+type ParticleDepth = "near" | "mid" | "far";
 
 type AppointmentRow = {
   id: string;
@@ -158,6 +163,18 @@ const APP_THEMES: Record<ThemeMode, ThemeTokens> = {
     tabSelectedText: "#FFFFFF",
   },
 };
+
+const PARTICLE_COUNT = 100;
+const PARTICLE_LAYOUT: Array<{ top: number; left: number; size: number; depth: ParticleDepth }> = Array.from(
+  { length: PARTICLE_COUNT },
+  (_, index) => {
+    const depth: ParticleDepth = index % 3 === 0 ? "near" : index % 3 === 1 ? "mid" : "far";
+    const size = 3 + (index % 4);
+    const top = 4 + ((index * 37) % 92);
+    const left = 4 + ((index * 53) % 92);
+    return { top, left, size, depth };
+  }
+);
 
 const statusOptions: Array<{ value: AppointmentStatus; label: string }> = [
   { value: "agendado", label: "Agendado" },
@@ -336,89 +353,134 @@ function AnimatedBackground({ mode }: { mode: ThemeMode | "light" }) {
     };
   }, [motionA, motionB, motionC]);
 
-  const blobOneTranslateY = motionA.interpolate({
+  const particleNearX = motionB.interpolate({
     inputRange: [0, 1],
-    outputRange: [-32, 28],
+    outputRange: [-10, 12],
   });
-  const blobOneTranslateX = motionB.interpolate({
+  const particleNearY = motionA.interpolate({
     inputRange: [0, 1],
-    outputRange: [-22, 24],
+    outputRange: [-14, 14],
   });
-  const blobTwoTranslateY = motionB.interpolate({
+  const particleMidX = motionC.interpolate({
     inputRange: [0, 1],
-    outputRange: [26, -24],
+    outputRange: [8, -10],
   });
-  const blobTwoTranslateX = motionA.interpolate({
+  const particleMidY = motionB.interpolate({
     inputRange: [0, 1],
-    outputRange: [20, -18],
+    outputRange: [12, -11],
   });
-  const blobThreeTranslateY = motionC.interpolate({
+  const particleFarX = motionA.interpolate({
     inputRange: [0, 1],
-    outputRange: [22, -26],
+    outputRange: [-6, 7],
   });
-  const blobThreeTranslateX = motionC.interpolate({
+  const particleFarY = motionC.interpolate({
     inputRange: [0, 1],
-    outputRange: [-18, 20],
+    outputRange: [8, -8],
   });
-  const blobScale = motionA.interpolate({
+  const particleOpacityNear = motionB.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.96, 1.12],
+    outputRange: [0.1, 0.24],
   });
-  const blobRotate = motionB.interpolate({
+  const particleOpacityMid = motionC.interpolate({
     inputRange: [0, 1],
-    outputRange: ["-8deg", "8deg"],
+    outputRange: [0.07, 0.18],
   });
-  const blobOpacity = motionC.interpolate({
+  const particleOpacityFar = motionA.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.72, 1],
+    outputRange: [0.04, 0.1],
+  });
+  const particleOpacitySpark = motionB.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.24, 0.52],
+  });
+  const particleScale = motionA.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.9, 1.14],
   });
 
   const isDark = mode === "dark";
-  const blobOneColor = isDark ? "rgba(139,92,246,0.32)" : "rgba(139,92,246,0.24)";
-  const blobTwoColor = isDark ? "rgba(167,139,250,0.28)" : "rgba(124,77,255,0.2)";
-  const blobThreeColor = isDark ? "rgba(98,84,182,0.24)" : "rgba(173,157,255,0.2)";
+  const particleColorPrimary = isDark ? "rgba(245,238,255,0.7)" : "rgba(76,39,182,0.56)";
+  const particleColorSecondary = isDark ? "rgba(199,180,255,0.64)" : "rgba(122,89,220,0.5)";
 
   return (
     <View pointerEvents="none" style={styles.animatedBackgroundLayer}>
-      <Animated.View
-        style={[
-          styles.animatedBlob,
-          styles.animatedBlobOne,
-          {
-            backgroundColor: blobOneColor,
-            opacity: blobOpacity,
-            transform: [
-              { translateX: blobOneTranslateX },
-              { translateY: blobOneTranslateY },
-              { scale: blobScale },
-              { rotate: blobRotate },
-            ],
-          },
-        ]}
-      />
-      <Animated.View
-        style={[
-          styles.animatedBlob,
-          styles.animatedBlobTwo,
-          {
-            backgroundColor: blobTwoColor,
-            opacity: blobOpacity,
-            transform: [{ translateX: blobTwoTranslateX }, { translateY: blobTwoTranslateY }, { rotate: blobRotate }],
-          },
-        ]}
-      />
-      <Animated.View
-        style={[
-          styles.animatedBlob,
-          styles.animatedBlobThree,
-          {
-            backgroundColor: blobThreeColor,
-            opacity: blobOpacity,
-            transform: [{ translateX: blobThreeTranslateX }, { translateY: blobThreeTranslateY }, { scale: blobScale }],
-          },
-        ]}
-      />
+      {PARTICLE_LAYOUT.map((particle, index) => {
+        const depthX =
+          particle.depth === "near" ? particleNearX : particle.depth === "mid" ? particleMidX : particleFarX;
+        const depthY =
+          particle.depth === "near" ? particleNearY : particle.depth === "mid" ? particleMidY : particleFarY;
+        const depthOpacity =
+          particle.depth === "near"
+            ? particleOpacityNear
+            : particle.depth === "mid"
+              ? particleOpacityMid
+              : particleOpacityFar;
+        const toneColor = index % 4 === 0 ? particleColorSecondary : particleColorPrimary;
+        const sparkleOpacity = index % 9 === 0 ? particleOpacitySpark : depthOpacity;
+
+        return (
+          <Animated.View
+            key={`particle-${index}`}
+            style={[
+              styles.animatedParticle,
+              {
+                width: particle.size,
+                height: particle.size,
+                top: `${particle.top}%`,
+                left: `${particle.left}%`,
+                backgroundColor: toneColor,
+                opacity: sparkleOpacity,
+                transform: [
+                  { translateX: depthX },
+                  { translateY: depthY },
+                  { scale: particleScale },
+                ],
+              },
+            ]}
+          />
+        );
+      })}
     </View>
+  );
+}
+
+function AnimatedSection({
+  children,
+  delay = 0,
+  style,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(18)).current;
+
+  useEffect(() => {
+    const animation = Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 420,
+        delay,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 420,
+        delay,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]);
+    animation.start();
+    return () => animation.stop();
+  }, [delay, opacity, translateY]);
+
+  return (
+    <Animated.View style={[style, { opacity, transform: [{ translateY }] }]}>
+      {children}
+    </Animated.View>
   );
 }
 
@@ -534,6 +596,7 @@ function ProfessionalArea({ session }: { session: Session }) {
   const [dashboardRefreshSignal, setDashboardRefreshSignal] = useState(0);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState("");
+  const tabTransition = useRef(new Animated.Value(1)).current;
   const theme = APP_THEMES[themeMode];
 
   const userName = session.user.user_metadata?.full_name || session.user.email || "Profissional";
@@ -601,6 +664,18 @@ function ProfessionalArea({ session }: { session: Session }) {
     registerPushToken();
   }, [session.user.id]);
 
+  useEffect(() => {
+    tabTransition.setValue(0);
+    const animation = Animated.timing(tabTransition, {
+      toValue: 1,
+      duration: 280,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [activeTab, tabTransition]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };
@@ -617,13 +692,21 @@ function ProfessionalArea({ session }: { session: Session }) {
         <View style={styles.headerButtonsRow}>
           <Pressable
             onPress={() => setDashboardRefreshSignal((current) => current + 1)}
-            style={[styles.themeToggleButton, { borderColor: theme.border, backgroundColor: theme.card }]}
+            style={({ pressed }) => [
+              styles.themeToggleButton,
+              { borderColor: theme.border, backgroundColor: theme.card },
+              pressed && styles.pressableShrink,
+            ]}
           >
             <Text style={[styles.themeToggleButtonText, { color: theme.textPrimary }]}>↻ Atualizar</Text>
           </Pressable>
           <Pressable
             onPress={() => setThemeMode((current) => (current === "dark" ? "light" : "dark"))}
-            style={[styles.themeToggleButton, { borderColor: theme.border, backgroundColor: theme.card }]}
+            style={({ pressed }) => [
+              styles.themeToggleButton,
+              { borderColor: theme.border, backgroundColor: theme.card },
+              pressed && styles.pressableShrink,
+            ]}
           >
             <Text style={[styles.themeToggleButtonText, { color: theme.textPrimary }]}>
               {themeMode === "dark" ? "◐ Claro" : "◐ Escuro"}
@@ -655,12 +738,13 @@ function ProfessionalArea({ session }: { session: Session }) {
                   <Pressable
                     key={tab.value}
                     onPress={() => setActiveTab(tab.value)}
-                    style={[
+                    style={({ pressed }) => [
                       styles.tabButton,
                       {
                         borderColor: theme.border,
                         backgroundColor: selected ? theme.tabSelectedBg : theme.tabBg,
                       },
+                      pressed && styles.pressableShrink,
                     ]}
                   >
                     <Text
@@ -678,12 +762,28 @@ function ProfessionalArea({ session }: { session: Session }) {
             </ScrollView>
           </View>
 
-          <ScrollView
-            style={styles.contentScroll}
-            contentContainerStyle={styles.dashboardScrollContent}
-            showsVerticalScrollIndicator={false}
-            persistentScrollbar={false}
+          <Animated.View
+            style={[
+              styles.contentScroll,
+              {
+                opacity: tabTransition,
+                transform: [
+                  {
+                    translateY: tabTransition.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [10, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
           >
+            <ScrollView
+              contentContainerStyle={styles.dashboardScrollContent}
+              showsVerticalScrollIndicator={false}
+              persistentScrollbar={false}
+              scrollEventThrottle={16}
+            >
             {activeTab === "dashboard" ? (
               <DashboardScreen
                 professionalId={session.user.id}
@@ -714,7 +814,8 @@ function ProfessionalArea({ session }: { session: Session }) {
             >
               <Text style={[styles.buttonText, { color: theme.buttonPrimaryText }]}>Sair</Text>
             </Pressable>
-          </ScrollView>
+            </ScrollView>
+          </Animated.View>
         </View>
       )}
     </SafeAreaView>
@@ -847,7 +948,8 @@ function DashboardScreen({
 
   return (
     <View style={styles.sectionContainer}>
-      <View
+      <AnimatedSection
+        delay={40}
         style={[
           styles.dashboardFeatureCard,
           { borderColor: theme.border, backgroundColor: theme.accent },
@@ -858,11 +960,11 @@ function DashboardScreen({
           <Text style={[styles.dashboardFeatureTitle, { color: "#f8f8f8" }]}>{displayName}</Text>
           <Text style={[styles.dashboardDate, { color: "#e8f0f3" }]}>{longDate}</Text>
         </View>
-      </View>
+      </AnimatedSection>
 
       {errorMessage ? <Text style={styles.errorBanner}>{errorMessage}</Text> : null}
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AnimatedSection delay={90} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Código de Agendamento</Text>
           <Text style={[styles.cardSubtitleSmall, { color: theme.textSecondary }]}>Copie quando precisar</Text>
@@ -878,9 +980,9 @@ function DashboardScreen({
           </Pressable>
         </View>
         {copyFeedback ? <Text style={styles.successBanner}>{copyFeedback}</Text> : null}
-      </View>
+      </AnimatedSection>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AnimatedSection delay={140} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Agenda de Hoje</Text>
           <Pressable onPress={onOpenAgenda}>
@@ -909,9 +1011,9 @@ function DashboardScreen({
             </Text>
           </View>
         )}
-      </View>
+      </AnimatedSection>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AnimatedSection delay={190} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Visão Geral</Text>
           <Text style={[styles.cardSubtitleSmall, { color: theme.textSecondary }]}>
@@ -938,7 +1040,7 @@ function DashboardScreen({
             <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>Cancelado</Text>
           </View>
         </View>
-      </View>
+      </AnimatedSection>
     </View>
   );
 }
@@ -1089,7 +1191,7 @@ function ServicesScreen({ professionalId, theme }: { professionalId: string; the
 
   return (
     <View style={styles.sectionContainer}>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AnimatedSection delay={70} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Novo serviço</Text>
         <TextInput
           value={name}
@@ -1133,9 +1235,9 @@ function ServicesScreen({ professionalId, theme }: { professionalId: string; the
         </Pressable>
         {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
         {message ? <Text style={styles.successBanner}>{message}</Text> : null}
-      </View>
+      </AnimatedSection>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AnimatedSection delay={130} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
           Serviços cadastrados ({activeCount} ativos de {services.length})
         </Text>
@@ -1179,7 +1281,7 @@ function ServicesScreen({ professionalId, theme }: { professionalId: string; the
             </View>
           ))
         )}
-      </View>
+      </AnimatedSection>
     </View>
   );
 }
@@ -1457,7 +1559,7 @@ function AgendaScreen({ professionalId, theme }: { professionalId: string; theme
 
   return (
     <View style={styles.sectionContainer}>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AnimatedSection delay={70} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Agenda por dia</Text>
         <Pressable
           onPress={() => setShowDatePicker(true)}
@@ -1492,9 +1594,9 @@ function AgendaScreen({ professionalId, theme }: { professionalId: string; theme
         </View>
         {errorMessage ? <Text style={styles.errorBanner}>{errorMessage}</Text> : null}
         {successMessage ? <Text style={styles.successBanner}>{successMessage}</Text> : null}
-      </View>
+      </AnimatedSection>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AnimatedSection delay={130} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Lista do dia ({appointments.length})</Text>
         {loading ? (
           <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
@@ -1658,7 +1760,7 @@ function AgendaScreen({ professionalId, theme }: { professionalId: string; theme
             </View>
           ))
         )}
-      </View>
+      </AnimatedSection>
     </View>
   );
 }
@@ -1797,7 +1899,7 @@ function AvailabilityScreen({ professionalId, theme }: { professionalId: string;
 
   return (
     <View style={styles.sectionContainer}>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AnimatedSection delay={70} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
           {editingRowId ? "Editar horário de disponibilidade" : "Configurar disponibilidade"}
         </Text>
@@ -1871,9 +1973,9 @@ function AvailabilityScreen({ professionalId, theme }: { professionalId: string;
         </View>
         {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
         {message ? <Text style={styles.successBanner}>{message}</Text> : null}
-      </View>
+      </AnimatedSection>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AnimatedSection delay={130} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Horários cadastrados</Text>
         {loading ? (
           <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>Carregando...</Text>
@@ -1915,7 +2017,7 @@ function AvailabilityScreen({ professionalId, theme }: { professionalId: string;
             </View>
           ))
         )}
-      </View>
+      </AnimatedSection>
     </View>
   );
 }
@@ -2030,7 +2132,7 @@ function BlockedTimesScreen({ professionalId, theme }: { professionalId: string;
 
   return (
     <View style={styles.sectionContainer}>
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AnimatedSection delay={70} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Novo bloqueio</Text>
         <Pressable
           onPress={() => setShowStartDatePicker(true)}
@@ -2120,9 +2222,9 @@ function BlockedTimesScreen({ professionalId, theme }: { professionalId: string;
         </Pressable>
         {error ? <Text style={styles.errorBanner}>{error}</Text> : null}
         {message ? <Text style={styles.successBanner}>{message}</Text> : null}
-      </View>
+      </AnimatedSection>
 
-      <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+      <AnimatedSection delay={130} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Bloqueios cadastrados</Text>
         {loading ? (
           <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>Carregando...</Text>
@@ -2147,7 +2249,7 @@ function BlockedTimesScreen({ professionalId, theme }: { professionalId: string;
             </View>
           ))
         )}
-      </View>
+      </AnimatedSection>
     </View>
   );
 }
@@ -2174,27 +2276,13 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
   },
-  animatedBlob: {
+  animatedParticle: {
     position: "absolute",
     borderRadius: 999,
-  },
-  animatedBlobOne: {
-    width: 290,
-    height: 290,
-    top: -90,
-    right: -70,
-  },
-  animatedBlobTwo: {
-    width: 320,
-    height: 320,
-    bottom: 90,
-    left: -110,
-  },
-  animatedBlobThree: {
-    width: 240,
-    height: 240,
-    bottom: -70,
-    right: 20,
+    shadowColor: "#8b5cf6",
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
   },
   authCard: {
     width: "100%",
@@ -2214,7 +2302,6 @@ const styles = StyleSheet.create({
   },
   topHeader: {
     minHeight: 70,
-    justifyContent: "center",
     gap: 2,
     borderBottomWidth: 0,
     paddingBottom: 10,
@@ -2298,6 +2385,10 @@ const styles = StyleSheet.create({
   themeToggleButtonText: {
     fontSize: 11,
     fontWeight: "700",
+  },
+  pressableShrink: {
+    transform: [{ scale: 0.97 }],
+    opacity: 0.9,
   },
   card: {
     borderWidth: 1,
