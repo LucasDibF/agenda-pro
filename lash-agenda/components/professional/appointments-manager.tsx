@@ -1,11 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase/client";
-import type { AppointmentStatus, AppointmentRow, AppointmentSelectRow } from "@/types/domain";
+import { useState } from "react";
+import { useSWRConfig } from "swr";
+import type { AppointmentStatus } from "@/types/domain";
 import { toLocalDateInput } from "@/lib/utils/date";
 import { buildWhatsappUrl } from "@/lib/utils/format";
-import { ensureProfessionalProfile } from "@/lib/utils/profile";
+import { supabase } from "@/lib/supabase/client";
+import { useCurrentProfessional } from "@/lib/hooks/useCurrentProfessional";
+import { useAppointments, appointmentsKey } from "@/lib/hooks/useAppointments";
+import { dashboardKey } from "@/lib/hooks/useDashboard";
 
 const statusOptions: Array<{ value: AppointmentStatus; label: string }> = [
   { value: "agendado", label: "Agendado" },
@@ -15,86 +18,56 @@ const statusOptions: Array<{ value: AppointmentStatus; label: string }> = [
 ];
 
 export function AppointmentsManager() {
-  const [professionalId, setProfessionalId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(toLocalDateInput(new Date()));
-  const [appointments, setAppointments] = useState<AppointmentRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  const { data: user, error: userError } = useCurrentProfessional();
+  const professionalId = user?.id ?? null;
+
+  const {
+    data: appointments = [],
+    isLoading,
+    error: appointmentsError,
+  } = useAppointments(professionalId, selectedDate);
+
+  const { mutate } = useSWRConfig();
+
+  const errorMessage = userError?.message ?? appointmentsError?.message ?? "";
+
   const totalAppointments = appointments.length;
-  const confirmedAppointments = useMemo(
-    () => appointments.filter((a) => a.status === "confirmado").length,
-    [appointments]
-  );
+  const confirmedAppointments = appointments.filter((a) => a.status === "confirmado").length;
 
   const showSuccess = (msg: string) => {
     setSuccessMessage(msg);
     setTimeout(() => setSuccessMessage(""), 3500);
   };
 
-  const fetchAppointments = useCallback(async (userId: string, dateInput: string) => {
-    const { data, error } = await supabase
-      .from("appointments")
-      .select(
-        "id, customer_name, customer_phone, customer_email, appointment_date, start_time, end_time, status, notes, service:services(name)"
-      )
-      .eq("professional_id", userId)
-      .eq("appointment_date", dateInput)
-      .order("start_time", { ascending: true });
-
-    if (error) { setErrorMessage(error.message); return; }
-
-    const normalized = ((data ?? []) as AppointmentSelectRow[]).map((row) => ({
-      ...row,
-      service: Array.isArray(row.service) ? (row.service[0] ?? null) : row.service,
-    }));
-    setAppointments(normalized);
-  }, []);
-
-  useEffect(() => {
-    const loadInitialData = async () => {
-      setLoading(true);
-      setErrorMessage("");
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        setErrorMessage("Nao foi possivel carregar o usuario logado.");
-        setLoading(false);
-        return;
-      }
-
-      const profileError = await ensureProfessionalProfile(user);
-      if (profileError) {
-        setErrorMessage(profileError.message);
-        setLoading(false);
-        return;
-      }
-
-      setProfessionalId(user.id);
-      await fetchAppointments(user.id, selectedDate);
-      setLoading(false);
-    };
-
-    loadInitialData();
-  }, [selectedDate, fetchAppointments]);
-
   const handleChangeStatus = async (appointmentId: string, status: AppointmentStatus) => {
     if (!professionalId) return;
-    setErrorMessage("");
     setUpdatingId(appointmentId);
+
+    // Optimistic update — atualiza localmente antes da resposta do banco
+    mutate(
+      appointmentsKey(professionalId, selectedDate),
+      appointments.map((a) => (a.id === appointmentId ? { ...a, status } : a)),
+      false // não revalida imediatamente
+    );
 
     const { error } = await supabase
       .from("appointments")
       .update({ status })
       .eq("id", appointmentId);
 
-    if (error) { setErrorMessage(error.message); setUpdatingId(null); return; }
+    if (error) {
+      // Reverte o optimistic update em caso de erro
+      mutate(appointmentsKey(professionalId, selectedDate));
+      setUpdatingId(null);
+      return;
+    }
 
-    setAppointments((current) =>
-      current.map((a) => (a.id === appointmentId ? { ...a, status } : a))
-    );
+    // Invalida o dashboard também (contadores mudam)
+    mutate(dashboardKey(professionalId));
     showSuccess("Status atualizado.");
     setUpdatingId(null);
   };
@@ -120,19 +93,18 @@ export function AppointmentsManager() {
 
           <article className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
             <p className="text-xs text-neutral-500">Total no dia</p>
-            <p className="text-2xl font-bold text-neutral-900">{loading ? "—" : totalAppointments}</p>
+            <p className="text-2xl font-bold text-neutral-900">{isLoading ? "—" : totalAppointments}</p>
           </article>
 
           <article className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
             <p className="text-xs text-neutral-500">Confirmados</p>
-            <p className="text-2xl font-bold text-neutral-900">{loading ? "—" : confirmedAppointments}</p>
+            <p className="text-2xl font-bold text-neutral-900">{isLoading ? "—" : confirmedAppointments}</p>
           </article>
         </div>
 
         {errorMessage ? (
           <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorMessage}</p>
         ) : null}
-
         {successMessage ? (
           <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{successMessage}</p>
         ) : null}
@@ -141,7 +113,7 @@ export function AppointmentsManager() {
       <div className="rounded-xl border border-neutral-200 bg-white p-5">
         <h3 className="text-lg font-semibold text-neutral-900">Lista do dia</h3>
 
-        {loading ? (
+        {isLoading ? (
           <p className="mt-4 text-sm text-neutral-600">Carregando agendamentos...</p>
         ) : appointments.length === 0 ? (
           <p className="mt-4 text-sm text-neutral-600">

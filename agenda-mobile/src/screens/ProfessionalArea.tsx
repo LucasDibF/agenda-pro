@@ -1,9 +1,10 @@
-// ─── Shell da área autenticada: tabs, tema, notificações ─────────────────────
+// ─── Shell da área autenticada: tabs, tema, notificações, Realtime ───────────
 
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  AppState,
   Easing,
   Platform,
   Pressable,
@@ -14,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as Notifications from "expo-notifications";
+import { SWRConfig } from "swr";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import type { AppTab, ThemeMode } from "../types";
@@ -21,17 +23,33 @@ import { APP_THEMES, APP_VERSION, tabs } from "../constants/theme";
 import { ensureProfessionalProfile } from "../utils";
 import { styles } from "../styles";
 import { AnimatedBackground } from "../components/AnimatedBackground";
+import { useRealtimeAppointments } from "../hooks/useRealtime";
 import { DashboardScreen } from "./DashboardScreen";
 import { ServicesScreen } from "./ServicesScreen";
 import { AgendaScreen } from "./AgendaScreen";
 import { AvailabilityScreen } from "./AvailabilityScreen";
 import { BlockedTimesScreen } from "./BlockedTimesScreen";
 
+// Configuração SWR para React Native:
+// revalidateOnFocus usa AppState para detectar quando o app volta ao primeiro plano
+const swrConfig = {
+  provider: () => new Map(),
+  isOnline: () => true,
+  isVisible: () => true,
+  initFocus(callback: () => void) {
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") callback();
+    });
+    return () => sub.remove();
+  },
+  initReconnect: () => () => {},
+};
+
 type ProfessionalAreaProps = {
   session: Session;
 };
 
-export function ProfessionalArea({ session }: ProfessionalAreaProps) {
+function ProfessionalAreaContent({ session }: ProfessionalAreaProps) {
   const [activeTab, setActiveTab] = useState<AppTab>("dashboard");
   const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const [dashboardRefreshSignal, setDashboardRefreshSignal] = useState(0);
@@ -40,11 +58,12 @@ export function ProfessionalArea({ session }: ProfessionalAreaProps) {
   const tabTransition = useRef(new Animated.Value(1)).current;
   const theme = APP_THEMES[themeMode];
 
-  const userName =
-    session.user.user_metadata?.full_name || session.user.email || "Profissional";
+  const userName = session.user.user_metadata?.full_name || session.user.email || "Profissional";
   const userFirstName = String(userName).split(" ")[0];
 
-  // ── Garante que o perfil existe no banco ──────────────────────────────────
+  // Realtime ativo durante toda a sessão
+  useRealtimeAppointments(session.user.id);
+
   useEffect(() => {
     const prepareProfile = async () => {
       setProfileLoading(true);
@@ -57,7 +76,6 @@ export function ProfessionalArea({ session }: ProfessionalAreaProps) {
     prepareProfile();
   }, [session.user]);
 
-  // ── Configura push notifications ──────────────────────────────────────────
   useEffect(() => {
     const setupNotifications = async () => {
       if (Platform.OS === "web") return;
@@ -79,7 +97,6 @@ export function ProfessionalArea({ session }: ProfessionalAreaProps) {
       const status = permission.granted
         ? "granted"
         : (await Notifications.requestPermissionsAsync()).status;
-
       if (status !== "granted") return;
 
       try {
@@ -88,12 +105,10 @@ export function ProfessionalArea({ session }: ProfessionalAreaProps) {
         });
         const token = tokenResult.data;
         if (!token) return;
-
         const { error } = await supabase
           .from("profiles")
           .update({ push_token: token })
           .eq("id", session.user.id);
-
         if (error) console.warn("Falha ao salvar push token:", error.message);
       } catch (error) {
         console.warn("Falha ao registrar push token:", error);
@@ -104,7 +119,6 @@ export function ProfessionalArea({ session }: ProfessionalAreaProps) {
     registerPushToken();
   }, [session.user.id]);
 
-  // ── Animação de transição entre tabs ─────────────────────────────────────
   useEffect(() => {
     tabTransition.setValue(0);
     const animation = Animated.timing(tabTransition, {
@@ -117,16 +131,13 @@ export function ProfessionalArea({ session }: ProfessionalAreaProps) {
     return () => animation.stop();
   }, [activeTab, tabTransition]);
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  };
+  const handleSignOut = async () => { await supabase.auth.signOut(); };
 
   return (
     <SafeAreaView style={[styles.dashboardContainer, { backgroundColor: theme.background }]}>
       <AnimatedBackground mode={themeMode} />
       <StatusBar style={themeMode === "dark" ? "light" : "dark"} />
 
-      {/* ── Cabeçalho ─────────────────────────────────────────────────────── */}
       <View style={[styles.topHeader, { borderBottomColor: theme.border }]}>
         <View>
           <Text style={[styles.brand, { color: theme.accent }]}>{`v${APP_VERSION}`}</Text>
@@ -134,19 +145,17 @@ export function ProfessionalArea({ session }: ProfessionalAreaProps) {
         </View>
         <View style={styles.headerButtonsRow}>
           <Pressable
-            onPress={() => setDashboardRefreshSignal((current) => current + 1)}
+            onPress={() => setDashboardRefreshSignal((n) => n + 1)}
             style={({ pressed }) => [
               styles.themeToggleButton,
               { borderColor: theme.border, backgroundColor: theme.card },
               pressed && styles.pressableShrink,
             ]}
           >
-            <Text style={[styles.themeToggleButtonText, { color: theme.textPrimary }]}>
-              ↻ Atualizar
-            </Text>
+            <Text style={[styles.themeToggleButtonText, { color: theme.textPrimary }]}>↻ Atualizar</Text>
           </Pressable>
           <Pressable
-            onPress={() => setThemeMode((current) => (current === "dark" ? "light" : "dark"))}
+            onPress={() => setThemeMode((m) => (m === "dark" ? "light" : "dark"))}
             style={({ pressed }) => [
               styles.themeToggleButton,
               { borderColor: theme.border, backgroundColor: theme.card },
@@ -163,18 +172,14 @@ export function ProfessionalArea({ session }: ProfessionalAreaProps) {
       {profileLoading ? (
         <View style={styles.loadingListContainer}>
           <ActivityIndicator />
-          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-            Preparando sua área...
-          </Text>
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Preparando sua área...</Text>
         </View>
       ) : profileError ? (
         <Text style={styles.errorBanner}>{profileError}</Text>
       ) : (
         <View style={styles.mainContent}>
-          {/* ── Barra de tabs ─────────────────────────────────────────────── */}
-          <View
-            style={[styles.tabsContainer, { backgroundColor: theme.card, borderColor: theme.border }]}
-          >
+          {/* ── Tabs ────────────────────────────────────────────────────── */}
+          <View style={[styles.tabsContainer, { backgroundColor: theme.card, borderColor: theme.border }]}>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -212,20 +217,18 @@ export function ProfessionalArea({ session }: ProfessionalAreaProps) {
             </ScrollView>
           </View>
 
-          {/* ── Conteúdo da tab ativa ──────────────────────────────────────── */}
+          {/* ── Conteúdo ─────────────────────────────────────────────── */}
           <Animated.View
             style={[
               styles.contentScroll,
               {
                 opacity: tabTransition,
-                transform: [
-                  {
-                    translateY: tabTransition.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [10, 0],
-                    }),
-                  },
-                ],
+                transform: [{
+                  translateY: tabTransition.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [10, 0],
+                  }),
+                }],
               },
             ]}
           >
@@ -259,11 +262,7 @@ export function ProfessionalArea({ session }: ProfessionalAreaProps) {
 
               <Pressable
                 onPress={handleSignOut}
-                style={[
-                  styles.button,
-                  styles.secondaryButton,
-                  { backgroundColor: theme.buttonPrimary, borderColor: theme.border },
-                ]}
+                style={[styles.button, styles.secondaryButton, { backgroundColor: theme.buttonPrimary }]}
               >
                 <Text style={[styles.buttonText, { color: theme.buttonPrimaryText }]}>Sair</Text>
               </Pressable>
@@ -272,5 +271,13 @@ export function ProfessionalArea({ session }: ProfessionalAreaProps) {
         </View>
       )}
     </SafeAreaView>
+  );
+}
+
+export function ProfessionalArea({ session }: ProfessionalAreaProps) {
+  return (
+    <SWRConfig value={swrConfig}>
+      <ProfessionalAreaContent session={session} />
+    </SWRConfig>
   );
 }

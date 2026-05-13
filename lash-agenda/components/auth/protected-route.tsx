@@ -1,19 +1,26 @@
 "use client";
 
-// ─── Guarda client-side ───────────────────────────────────────────────────────
+// ─── Guarda client-side + Realtime ───────────────────────────────────────────
 //
 // Segunda camada de proteção (a primeira é o middleware.ts no edge).
-// Redireciona para /login se a sessão expirar enquanto o usuário está na página.
-// Usa getUser() que valida o token contra o servidor — mais seguro que getSession().
+// Também monta o canal Realtime quando o usuário está autenticado,
+// garantindo que o painel atualiza automaticamente quando chegam novos
+// agendamentos ou mudanças de status.
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
+import { useRealtimeAppointments } from "@/lib/hooks/useRealtime";
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
 };
+
+function RealtimeMount({ professionalId }: { professionalId: string }) {
+  useRealtimeAppointments(professionalId);
+  return null;
+}
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
@@ -42,13 +49,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!isMounted) return;
-
       if (!session) {
         setUser(null);
         router.replace(`/login?next=${encodeURIComponent(pathname || "/professional")}`);
         return;
       }
-
       setUser(session.user);
     });
 
@@ -68,5 +73,11 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) return null;
 
-  return <>{children}</>;
+  return (
+    <>
+      {/* Canal Realtime ativo enquanto o painel está aberto */}
+      <RealtimeMount professionalId={user.id} />
+      {children}
+    </>
+  );
 }

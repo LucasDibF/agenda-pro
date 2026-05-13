@@ -1,14 +1,14 @@
 // ─── Dashboard — KPIs, agendamento do dia e link de booking ──────────────────
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
-import { supabase } from "../lib/supabase";
-import type { DashboardAppointmentRow, DashboardAppointmentSelectRow, ThemeTokens } from "../types";
+import type { ThemeTokens } from "../types";
 import { webAppBaseUrl } from "../constants/theme";
 import { toIsoDate, formatHour, formatMoneyBr, combineDateAndTime } from "../utils";
 import { styles } from "../styles";
 import { AnimatedSection } from "../components/AnimatedSection";
+import { useDashboard } from "../hooks/useDashboard";
 
 type DashboardScreenProps = {
   professionalId: string;
@@ -25,75 +25,31 @@ export function DashboardScreen({
   displayName,
   refreshSignal,
 }: DashboardScreenProps) {
-  const [loading, setLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [activeServicesCount, setActiveServicesCount] = useState(0);
-  const [todayAppointments, setTodayAppointments] = useState<DashboardAppointmentRow[]>([]);
-  const [statusSummary, setStatusSummary] = useState({
-    agendado: 0,
-    confirmado: 0,
-    concluido: 0,
-    cancelado: 0,
-  });
+  const { data, isLoading, error, mutate } = useDashboard(professionalId);
   const [copyFeedback, setCopyFeedback] = useState("");
+
+  // refreshSignal do botão "↻ Atualizar" força revalidação manual
+  useMemo(() => {
+    if (refreshSignal > 0) mutate();
+  }, [refreshSignal]);
 
   const bookingCode = professionalId;
   const bookingLink = `${webAppBaseUrl}/booking/${bookingCode}`;
 
-  const loadDashboard = useCallback(async () => {
-    setLoading(true);
-    setErrorMessage("");
-
-    const today = toIsoDate();
-    const [servicesRes, todayRes] = await Promise.all([
-      supabase
-        .from("services")
-        .select("id", { count: "exact", head: true })
-        .eq("professional_id", professionalId)
-        .eq("is_active", true),
-      supabase
-        .from("appointments")
-        .select("id, customer_name, start_time, end_time, status, service:services(name, price)")
-        .eq("professional_id", professionalId)
-        .eq("appointment_date", today)
-        .order("start_time", { ascending: true })
-        .limit(30),
-    ]);
-
-    if (todayRes.error || servicesRes.error) {
-      setErrorMessage(
-        todayRes.error?.message ?? servicesRes.error?.message ?? "Erro ao carregar dashboard."
-      );
-      setLoading(false);
-      return;
-    }
-
-    const normalizedToday = ((todayRes.data ?? []) as DashboardAppointmentSelectRow[]).map(
-      (row) => ({
-        ...row,
-        service: Array.isArray(row.service) ? (row.service[0] ?? null) : row.service,
-      })
-    );
-
-    setActiveServicesCount(servicesRes.count ?? 0);
-    setStatusSummary(
-      normalizedToday.reduce(
-        (acc, item) => { acc[item.status] += 1; return acc; },
-        { agendado: 0, confirmado: 0, concluido: 0, cancelado: 0 }
-      )
-    );
-    setTodayAppointments(normalizedToday);
-    setLoading(false);
-  }, [professionalId]);
-
-  useEffect(() => {
-    loadDashboard();
-  }, [loadDashboard, refreshSignal]);
+  const firstAppointment = useMemo(
+    () =>
+      (data?.todayAppointments ?? []).find((a) => {
+        const active = a.status === "agendado" || a.status === "confirmado";
+        if (!active) return false;
+        return combineDateAndTime(toIsoDate(), a.end_time) > new Date();
+      }) ?? null,
+    [data?.todayAppointments]
+  );
 
   const greeting = (() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Bom dia!";
-    if (hour < 18) return "Boa tarde!";
+    const h = new Date().getHours();
+    if (h < 12) return "Bom dia!";
+    if (h < 18) return "Boa tarde!";
     return "Boa noite!";
   })();
 
@@ -101,34 +57,13 @@ export function DashboardScreen({
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   }).format(new Date());
 
-  const firstAppointment = useMemo(
-    () =>
-      todayAppointments.find((a) => {
-        const active = a.status === "agendado" || a.status === "confirmado";
-        if (!active) return false;
-        return combineDateAndTime(toIsoDate(), a.end_time) > new Date();
-      }) ?? null,
-    [todayAppointments]
-  );
-
   const showCopyFeedback = (msg: string) => {
     setCopyFeedback(msg);
     setTimeout(() => setCopyFeedback(""), 2000);
   };
 
-  const handleCopyBookingCode = async () => {
-    await Clipboard.setStringAsync(bookingCode);
-    showCopyFeedback("Código copiado.");
-  };
-
-  const handleCopyBookingLink = async () => {
-    await Clipboard.setStringAsync(bookingLink);
-    showCopyFeedback("Link copiado.");
-  };
-
   return (
     <View style={styles.sectionContainer}>
-      {/* ── Card de boas-vindas ──────────────────────────────────────────── */}
       <AnimatedSection
         delay={40}
         style={[styles.dashboardFeatureCard, { borderColor: theme.border, backgroundColor: theme.accent }]}
@@ -138,11 +73,9 @@ export function DashboardScreen({
         <Text style={[styles.dashboardDate, { color: "#e8f0f3" }]}>{longDate}</Text>
       </AnimatedSection>
 
-      {errorMessage ? (
-        <Text style={styles.errorBanner}>{errorMessage}</Text>
-      ) : null}
+      {error ? <Text style={styles.errorBanner}>{error.message}</Text> : null}
 
-      {/* ── Código e link ────────────────────────────────────────────────── */}
+      {/* ── Código e link ──────────────────────────────────────────────── */}
       <AnimatedSection delay={90} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Código de Agendamento</Text>
@@ -151,17 +84,17 @@ export function DashboardScreen({
         <Text style={[styles.bookingCodeValue, { color: theme.textPrimary }]}>{bookingCode}</Text>
         <Text style={[styles.bookingLinkValue, { color: theme.textSecondary }]}>{bookingLink}</Text>
         <View style={styles.actionRow}>
-          <Pressable onPress={handleCopyBookingCode} style={[styles.smallButton, { borderColor: theme.border }]}>
+          <Pressable onPress={async () => { await Clipboard.setStringAsync(bookingCode); showCopyFeedback("Código copiado."); }} style={[styles.smallButton, { borderColor: theme.border }]}>
             <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Copiar código</Text>
           </Pressable>
-          <Pressable onPress={handleCopyBookingLink} style={[styles.smallButton, { borderColor: theme.border }]}>
+          <Pressable onPress={async () => { await Clipboard.setStringAsync(bookingLink); showCopyFeedback("Link copiado."); }} style={[styles.smallButton, { borderColor: theme.border }]}>
             <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Copiar link</Text>
           </Pressable>
         </View>
         {copyFeedback ? <Text style={styles.successBanner}>{copyFeedback}</Text> : null}
       </AnimatedSection>
 
-      {/* ── Próximo agendamento ──────────────────────────────────────────── */}
+      {/* ── Próximo agendamento ────────────────────────────────────────── */}
       <AnimatedSection delay={140} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Agenda de Hoje</Text>
@@ -170,7 +103,7 @@ export function DashboardScreen({
           </Pressable>
         </View>
 
-        {loading ? (
+        {isLoading ? (
           <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>Carregando...</Text>
         ) : !firstAppointment ? (
           <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
@@ -191,12 +124,12 @@ export function DashboardScreen({
         )}
       </AnimatedSection>
 
-      {/* ── Resumo de status ─────────────────────────────────────────────── */}
+      {/* ── Resumo de status ──────────────────────────────────────────── */}
       <AnimatedSection delay={190} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Visão Geral</Text>
           <Text style={[styles.cardSubtitleSmall, { color: theme.textSecondary }]}>
-            {activeServicesCount} {activeServicesCount === 1 ? "serviço" : "serviços"}
+            {data?.activeServicesCount ?? "—"} {(data?.activeServicesCount ?? 0) === 1 ? "serviço" : "serviços"}
           </Text>
         </View>
         <View style={styles.summaryGrid}>
@@ -209,7 +142,9 @@ export function DashboardScreen({
             ] as const
           ).map(({ key, label, valueStyle }) => (
             <View key={key} style={[styles.summaryCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
-              <Text style={valueStyle}>{loading ? "—" : String(statusSummary[key])}</Text>
+              <Text style={valueStyle}>
+                {isLoading ? "—" : String(data?.statusSummary[key] ?? 0)}
+              </Text>
               <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>{label}</Text>
             </View>
           ))}
