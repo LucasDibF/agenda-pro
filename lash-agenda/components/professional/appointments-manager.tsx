@@ -186,7 +186,8 @@ export function AppointmentsManager() {
                     </p>
                     <p className="text-sm text-neutral-700">{appointment.customer_name}</p>
                     <p className="text-sm text-neutral-500">
-                      {appointment.customer_phone} • {appointment.customer_email}
+                      {appointment.customer_phone}
+                      {appointment.customer_email ? ` • ${appointment.customer_email}` : ""}
                     </p>
                     {appointment.notes ? (
                       <p className="text-sm text-neutral-500">Obs: {appointment.notes}</p>

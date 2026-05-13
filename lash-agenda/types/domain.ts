@@ -6,7 +6,7 @@ export type AppointmentRow = {
   id: string;
   customer_name: string;
   customer_phone: string;
-  customer_email: string;
+  customer_email: string | null;
   appointment_date: string;
   start_time: string;
   end_time: string;

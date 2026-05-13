@@ -124,7 +124,7 @@ create table if not exists public.appointments (
   service_id uuid not null references public.services(id) on delete restrict,
   customer_name text not null,
   customer_phone text not null,
-  customer_email text not null,
+  customer_email text,
   appointment_date date not null,
   start_time time not null,
   end_time time not null,

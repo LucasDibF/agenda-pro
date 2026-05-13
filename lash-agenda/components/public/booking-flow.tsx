@@ -19,7 +19,6 @@ import { BookingCalendar } from "@/components/public/booking-calendar";
 type BookingFormState = {
   customerName: string;
   customerPhone: string;
-  customerEmail: string;
   notes: string;
 };
 
@@ -43,7 +42,6 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
   const [form, setForm] = useState<BookingFormState>({
     customerName: "",
     customerPhone: "",
-    customerEmail: "",
     notes: "",
   });
 
@@ -220,8 +218,8 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
       return;
     }
 
-    if (!form.customerName.trim() || !form.customerPhone.trim() || !form.customerEmail.trim()) {
-      setErrorMessage("Preencha nome, telefone e email.");
+    if (!form.customerName.trim() || !form.customerPhone.trim()) {
+      setErrorMessage("Preencha nome e telefone.");
       return;
     }
 
@@ -240,7 +238,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
         service_id: selectedService.id,
         customer_name: form.customerName.trim(),
         customer_phone: form.customerPhone.trim(),
-        customer_email: form.customerEmail.trim(),
+        customer_email: null,
         appointment_date: selectedDate,
         start_time: selectedSlot.startTime,
         end_time: selectedSlot.endTime,
@@ -257,7 +255,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     }
 
     setSuccessMessage("Agendamento confirmado com sucesso!");
-    setForm({ customerName: "", customerPhone: "", customerEmail: "", notes: "" });
+    setForm({ customerName: "", customerPhone: "", notes: "" });
     setSelectedStartTime("");
 
     if (insertedAppointment?.id) {
@@ -394,17 +392,6 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
               type="tel"
               value={form.customerPhone}
               onChange={(event) => setForm((prev) => ({ ...prev, customerPhone: event.target.value }))}
-              required
-              className="input-shell"
-            />
-          </label>
-
-          <label className="space-y-1 md:col-span-2">
-            <span className="text-sm font-medium text-[var(--foreground)]">Email</span>
-            <input
-              type="email"
-              value={form.customerEmail}
-              onChange={(event) => setForm((prev) => ({ ...prev, customerEmail: event.target.value }))}
               required
               className="input-shell"
             />
