@@ -2,56 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
+import type { AppointmentStatus, UpcomingAppointmentRow, UpcomingAppointmentSelectRow } from "@/types/domain";
+import { toLocalDateInput, formatDateBr } from "@/lib/utils/date";
+import { ensureProfessionalProfile } from "@/lib/utils/profile";
 import { BookingLinkCard } from "@/components/professional/booking-link-card";
 
-type AppointmentStatus = "agendado" | "confirmado" | "cancelado" | "concluido";
+// ─── Mapeamento de status → classes de cor do chip ───────────────────────────
 
-type UpcomingAppointmentRow = {
-  id: string;
-  appointment_date: string;
-  start_time: string;
-  status: AppointmentStatus;
-  customer_name: string;
-  service: {
-    name: string;
-  } | null;
-};
-
-type UpcomingAppointmentSelectRow = {
-  id: string;
-  appointment_date: string;
-  start_time: string;
-  status: AppointmentStatus;
-  customer_name: string;
-  service: Array<{ name: string }> | { name: string } | null;
-};
-
-const toLocalDateInput = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const formatDateBr = (dateInput: string) => {
-  const [year, month, day] = dateInput.split("-");
-  return `${day}/${month}/${year}`;
-};
-
-const getStatusChip = (status: AppointmentStatus) => {
-  if (status === "confirmado") {
-    return "bg-[#EDE8FF] text-[#5B3CC4]";
-  }
-  if (status === "agendado") {
-    return "bg-[#F3F0FF] text-[#6C47DE]";
-  }
-  if (status === "concluido") {
-    return "bg-[#EEF0F7] text-[#4C5568]";
-  }
+const getStatusChip = (status: AppointmentStatus): string => {
+  if (status === "confirmado") return "bg-[#EDE8FF] text-[#5B3CC4]";
+  if (status === "agendado") return "bg-[#F3F0FF] text-[#6C47DE]";
+  if (status === "concluido") return "bg-[#EEF0F7] text-[#4C5568]";
   return "bg-[#F8EAF2] text-[#944A70]";
 };
+
+// ─── Componente ───────────────────────────────────────────────────────────────
 
 export function DashboardOverview() {
   const [loading, setLoading] = useState(true);
@@ -65,24 +31,6 @@ export function DashboardOverview() {
     () => (errorMessage ? "Atencao: verificar dados" : "Base pronta"),
     [errorMessage]
   );
-
-  const ensureProfessionalProfile = async (user: User) => {
-    const fullName =
-      typeof user.user_metadata?.full_name === "string"
-        ? user.user_metadata.full_name
-        : null;
-    const phone =
-      typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : null;
-
-    const { error } = await supabase.from("profiles").upsert({
-      id: user.id,
-      full_name: fullName,
-      phone,
-      role: "professional",
-    });
-
-    return error;
-  };
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -147,11 +95,7 @@ export function DashboardOverview() {
 
       const normalizedUpcoming = ((upcomingRes.data ?? []) as UpcomingAppointmentSelectRow[]).map(
         (row) => ({
-          id: row.id,
-          appointment_date: row.appointment_date,
-          start_time: row.start_time,
-          status: row.status,
-          customer_name: row.customer_name,
+          ...row,
           service: Array.isArray(row.service) ? (row.service[0] ?? null) : row.service,
         })
       );

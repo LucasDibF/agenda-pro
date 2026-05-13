@@ -1,18 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
+import type { ServiceRow } from "@/types/domain";
+import { ensureProfessionalProfile } from "@/lib/utils/profile";
 
-type ServiceRow = {
-  id: string;
-  name: string;
-  duration_minutes: number;
-  price: number;
-  description: string | null;
-  is_active: boolean;
-  created_at: string;
-};
+// ─── Estado do formulário ─────────────────────────────────────────────────────
 
 type ServiceFormState = {
   name: string;
@@ -28,6 +21,8 @@ const initialFormState: ServiceFormState = {
   description: "",
 };
 
+// ─── Componente ───────────────────────────────────────────────────────────────
+
 export function ServicesManager() {
   const [professionalId, setProfessionalId] = useState<string | null>(null);
   const [services, setServices] = useState<ServiceRow[]>([]);
@@ -42,22 +37,9 @@ export function ServicesManager() {
     [services]
   );
 
-  const ensureProfessionalProfile = async (user: User) => {
-    const fullName =
-      typeof user.user_metadata?.full_name === "string"
-        ? user.user_metadata.full_name
-        : null;
-    const phone =
-      typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : null;
-
-    const { error } = await supabase.from("profiles").upsert({
-      id: user.id,
-      full_name: fullName,
-      phone,
-      role: "professional",
-    });
-
-    return error;
+  const resetFeedback = () => {
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
   const fetchServices = async (userId: string) => {
@@ -105,11 +87,6 @@ export function ServicesManager() {
 
     loadInitialData();
   }, []);
-
-  const resetFeedback = () => {
-    setErrorMessage("");
-    setSuccessMessage("");
-  };
 
   const handleCreateService = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -1,8 +1,14 @@
 "use client";
 
+// ─── Guarda client-side ───────────────────────────────────────────────────────
+//
+// Segunda camada de proteção (a primeira é o middleware.ts no edge).
+// Redireciona para /login se a sessão expirar enquanto o usuário está na página.
+// Usa getUser() que valida o token contra o servidor — mais seguro que getSession().
+
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import type { Session } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 
 type ProtectedRouteProps = {
@@ -13,37 +19,37 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
-    const loadSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
+    const loadUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
       if (!isMounted) return;
 
-      if (error || !data.session) {
+      if (error || !data.user) {
         router.replace(`/login?next=${encodeURIComponent(pathname || "/professional")}`);
         setLoading(false);
         return;
       }
 
-      setSession(data.session);
+      setUser(data.user);
       setLoading(false);
     };
 
-    loadSession();
+    loadUser();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!isMounted) return;
 
-      if (!newSession) {
-        setSession(null);
+      if (!session) {
+        setUser(null);
         router.replace(`/login?next=${encodeURIComponent(pathname || "/professional")}`);
         return;
       }
 
-      setSession(newSession);
+      setUser(session.user);
     });
 
     return () => {
@@ -60,7 +66,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!session) return null;
+  if (!user) return null;
 
   return <>{children}</>;
 }

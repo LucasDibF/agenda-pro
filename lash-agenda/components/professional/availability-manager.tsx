@@ -1,24 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
+import type { AvailabilityRow } from "@/types/domain";
+import { ensureProfessionalProfile } from "@/lib/utils/profile";
 
-type AvailabilityRow = {
-  id: string;
-  weekday: number;
-  start_time: string;
-  end_time: string;
-  slot_interval_minutes: number;
-  is_active: boolean;
-};
-
-type AvailabilityFormState = {
-  weekday: string;
-  startTime: string;
-  endTime: string;
-  intervalMinutes: string;
-};
+// ─── Opções de dia da semana (0 = Domingo) ───────────────────────────────────
 
 const weekdayOptions = [
   { value: "1", label: "Segunda-feira" },
@@ -30,12 +17,23 @@ const weekdayOptions = [
   { value: "0", label: "Domingo" },
 ];
 
+// ─── Estado do formulário ─────────────────────────────────────────────────────
+
+type AvailabilityFormState = {
+  weekday: string;
+  startTime: string;
+  endTime: string;
+  intervalMinutes: string;
+};
+
 const initialFormState: AvailabilityFormState = {
   weekday: "1",
   startTime: "08:00",
   endTime: "18:00",
   intervalMinutes: "0",
 };
+
+// ─── Componente ───────────────────────────────────────────────────────────────
 
 export function AvailabilityManager() {
   const [professionalId, setProfessionalId] = useState<string | null>(null);
@@ -46,22 +44,9 @@ export function AvailabilityManager() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const ensureProfessionalProfile = async (user: User) => {
-    const fullName =
-      typeof user.user_metadata?.full_name === "string"
-        ? user.user_metadata.full_name
-        : null;
-    const phone =
-      typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : null;
-
-    const { error } = await supabase.from("profiles").upsert({
-      id: user.id,
-      full_name: fullName,
-      phone,
-      role: "professional",
-    });
-
-    return error;
+  const resetFeedback = () => {
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
   const fetchAvailability = async (userId: string) => {
@@ -110,11 +95,6 @@ export function AvailabilityManager() {
 
     loadInitialData();
   }, []);
-
-  const resetFeedback = () => {
-    setErrorMessage("");
-    setSuccessMessage("");
-  };
 
   const handleCreateAvailability = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -1,38 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
+import type {
+  AppointmentStatus,
+  AppointmentRow,
+  AppointmentSelectRow,
+} from "@/types/domain";
+import { toLocalDateInput } from "@/lib/utils/date";
+import { buildWhatsappUrl } from "@/lib/utils/format";
+import { ensureProfessionalProfile } from "@/lib/utils/profile";
 
-type AppointmentStatus = "agendado" | "confirmado" | "cancelado" | "concluido";
-
-type AppointmentRow = {
-  id: string;
-  customer_name: string;
-  customer_phone: string;
-  customer_email: string;
-  appointment_date: string;
-  start_time: string;
-  end_time: string;
-  status: AppointmentStatus;
-  notes: string | null;
-  service: {
-    name: string;
-  } | null;
-};
-
-type AppointmentSelectRow = {
-  id: string;
-  customer_name: string;
-  customer_phone: string;
-  customer_email: string;
-  appointment_date: string;
-  start_time: string;
-  end_time: string;
-  status: AppointmentStatus;
-  notes: string | null;
-  service: Array<{ name: string }> | { name: string } | null;
-};
+// ─── Opções de status exibidas no select ─────────────────────────────────────
 
 const statusOptions: Array<{ value: AppointmentStatus; label: string }> = [
   { value: "agendado", label: "Agendado" },
@@ -41,42 +20,7 @@ const statusOptions: Array<{ value: AppointmentStatus; label: string }> = [
   { value: "concluido", label: "Concluido" },
 ];
 
-const toLocalDateInput = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const normalizePhoneForWhatsapp = (phone: string) => {
-  const digits = phone.replace(/\D/g, "");
-
-  if (digits.length < 10) return null;
-  if (digits.startsWith("55")) return digits;
-  return `55${digits}`;
-};
-
-const formatDateBr = (dateInput: string) => {
-  const [year, month, day] = dateInput.split("-");
-  return `${day}/${month}/${year}`;
-};
-
-const buildWhatsappUrl = (appointment: AppointmentRow) => {
-  const phone = normalizePhoneForWhatsapp(appointment.customer_phone);
-  if (!phone) return null;
-
-  const firstName =
-    appointment.customer_name.trim().split(/\s+/).filter(Boolean)[0] || "cliente";
-  const serviceName = appointment.service?.name ?? "serviço";
-  const message = [
-    `Olá ${firstName}!`,
-    `Seu horário foi confirmado para ${formatDateBr(appointment.appointment_date)} às ${appointment.start_time.slice(0, 5)}.`,
-    `Serviço: ${serviceName}.`,
-    "Qualquer dúvida, estou à disposição.",
-  ].join(" ");
-
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-};
+// ─── Componente ───────────────────────────────────────────────────────────────
 
 export function AppointmentsManager() {
   const [professionalId, setProfessionalId] = useState<string | null>(null);
@@ -92,24 +36,6 @@ export function AppointmentsManager() {
     () => appointments.filter((item) => item.status === "confirmado").length,
     [appointments]
   );
-
-  const ensureProfessionalProfile = async (user: User) => {
-    const fullName =
-      typeof user.user_metadata?.full_name === "string"
-        ? user.user_metadata.full_name
-        : null;
-    const phone =
-      typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : null;
-
-    const { error } = await supabase.from("profiles").upsert({
-      id: user.id,
-      full_name: fullName,
-      phone,
-      role: "professional",
-    });
-
-    return error;
-  };
 
   const fetchAppointments = async (userId: string, dateInput: string) => {
     const { data, error } = await supabase
@@ -127,15 +53,7 @@ export function AppointmentsManager() {
     }
 
     const normalized = ((data ?? []) as AppointmentSelectRow[]).map((row) => ({
-      id: row.id,
-      customer_name: row.customer_name,
-      customer_phone: row.customer_phone,
-      customer_email: row.customer_email,
-      appointment_date: row.appointment_date,
-      start_time: row.start_time,
-      end_time: row.end_time,
-      status: row.status,
-      notes: row.notes,
+      ...row,
       service: Array.isArray(row.service) ? (row.service[0] ?? null) : row.service,
     }));
 

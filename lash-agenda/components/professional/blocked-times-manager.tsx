@@ -1,15 +1,12 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
+import type { BlockedTimeRow } from "@/types/domain";
+import { toDatetimeLocal, formatDateTime } from "@/lib/utils/date";
+import { ensureProfessionalProfile } from "@/lib/utils/profile";
 
-type BlockedTimeRow = {
-  id: string;
-  start_at: string;
-  end_at: string;
-  reason: string | null;
-};
+// ─── Estado do formulário ─────────────────────────────────────────────────────
 
 type BlockedTimeFormState = {
   startAt: string;
@@ -18,30 +15,13 @@ type BlockedTimeFormState = {
 };
 
 const now = new Date();
-const initialStart = new Date(now.getTime() + 60 * 60 * 1000);
-const initialEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-
-const toDatetimeLocal = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
-};
-
 const initialFormState: BlockedTimeFormState = {
-  startAt: toDatetimeLocal(initialStart),
-  endAt: toDatetimeLocal(initialEnd),
+  startAt: toDatetimeLocal(new Date(now.getTime() + 60 * 60 * 1000)),
+  endAt: toDatetimeLocal(new Date(now.getTime() + 2 * 60 * 60 * 1000)),
   reason: "",
 };
 
-const formatDateTime = (isoDateString: string) =>
-  new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(isoDateString));
+// ─── Componente ───────────────────────────────────────────────────────────────
 
 export function BlockedTimesManager() {
   const [professionalId, setProfessionalId] = useState<string | null>(null);
@@ -52,22 +32,9 @@ export function BlockedTimesManager() {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
-  const ensureProfessionalProfile = async (user: User) => {
-    const fullName =
-      typeof user.user_metadata?.full_name === "string"
-        ? user.user_metadata.full_name
-        : null;
-    const phone =
-      typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : null;
-
-    const { error } = await supabase.from("profiles").upsert({
-      id: user.id,
-      full_name: fullName,
-      phone,
-      role: "professional",
-    });
-
-    return error;
+  const resetFeedback = () => {
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
   const fetchBlockedTimes = async (userId: string) => {
@@ -115,11 +82,6 @@ export function BlockedTimesManager() {
 
     loadInitialData();
   }, []);
-
-  const resetFeedback = () => {
-    setErrorMessage("");
-    setSuccessMessage("");
-  };
 
   const handleCreateBlockedTime = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

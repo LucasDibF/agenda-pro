@@ -2,44 +2,19 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import type {
+  ServiceRow,
+  AvailabilityRow,
+  BlockedTimeRow,
+  BookedSlotRow,
+  SlotOption,
+} from "@/types/domain";
+import { toLocalDateInput } from "@/lib/utils/date";
+import { formatCurrencyBRL } from "@/lib/utils/format";
+import { generateSlots } from "@/lib/utils/slots";
 import { BookingCalendar } from "@/components/public/booking-calendar";
 
-type ServiceRow = {
-  id: string;
-  name: string;
-  duration_minutes: number;
-  price: number;
-  description: string | null;
-};
-
-type AvailabilityRow = {
-  id: string;
-  weekday: number;
-  start_time: string;
-  end_time: string;
-  slot_interval_minutes: number;
-  is_active: boolean;
-};
-
-type BlockedTimeRow = {
-  id: string;
-  start_at: string;
-  end_at: string;
-};
-
-type BookedSlotRow = {
-  start_time: string;
-  end_time: string;
-};
-
-type BookingFlowProps = {
-  professionalIdentifier: string;
-};
-
-type SlotOption = {
-  startTime: string;
-  endTime: string;
-};
+// ─── Estado do formulário do cliente ─────────────────────────────────────────
 
 type BookingFormState = {
   customerName: string;
@@ -48,25 +23,11 @@ type BookingFormState = {
   notes: string;
 };
 
-const toLocalDateInput = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+// ─── Componente ───────────────────────────────────────────────────────────────
+
+type BookingFlowProps = {
+  professionalIdentifier: string;
 };
-
-const normalizeTime = (timeInput: string) => timeInput.slice(0, 5);
-
-const combineDateAndTime = (dateInput: string, timeInput: string) =>
-  new Date(`${dateInput}T${normalizeTime(timeInput)}:00`);
-
-const hasOverlap = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) => aStart < bEnd && bStart < aEnd;
-
-const formatCurrencyBRL = (value: number) =>
-  new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value);
 
 export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
   const [professionalId, setProfessionalId] = useState<string | null>(null);
@@ -95,6 +56,8 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     () => services.find((service) => service.id === selectedServiceId) ?? null,
     [services, selectedServiceId]
   );
+
+  // ── 1) Resolve identificador da profissional (UUID ou booking_code) ──────────
 
   useEffect(() => {
     const resolveProfessional = async () => {
@@ -140,6 +103,8 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     resolveProfessional();
   }, [professionalIdentifier]);
 
+  // ── 2) Carrega serviços e disponibilidade ao resolver o ID ───────────────────
+
   useEffect(() => {
     const loadInitialData = async () => {
       if (!professionalId) return;
@@ -149,7 +114,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
       const [servicesRes, availabilityRes] = await Promise.all([
         supabase
           .from("services")
-          .select("id, name, duration_minutes, price, description")
+          .select("id, name, duration_minutes, price, description, is_active, created_at")
           .eq("professional_id", professionalId)
           .eq("is_active", true)
           .order("created_at", { ascending: false }),
@@ -188,6 +153,8 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     loadInitialData();
   }, [professionalId]);
 
+  // ── 3) Atualiza bloqueios e slots ocupados ao mudar a data ───────────────────
+
   useEffect(() => {
     const loadDateData = async () => {
       if (!professionalId || !selectedDate) return;
@@ -200,7 +167,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
       const [blockedRes, bookedRes] = await Promise.all([
         supabase
           .from("blocked_times")
-          .select("id, start_at, end_at")
+          .select("id, start_at, end_at, reason")
           .eq("professional_id", professionalId)
           .lt("start_at", dayEndIso)
           .gt("end_at", dayStartIso),
@@ -228,60 +195,20 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     loadDateData();
   }, [professionalId, selectedDate]);
 
-  const slotOptions = useMemo(() => {
+  // ── 4) Gera os slots disponíveis para a data e serviço selecionados ──────────
+
+  const slotOptions: SlotOption[] = useMemo(() => {
     if (!selectedDate || !selectedService) return [];
-
-    const selectedDateObject = new Date(`${selectedDate}T00:00:00`);
-    const weekday = selectedDateObject.getDay();
-    const dayAvailability = availabilityRows.filter((row) => row.weekday === weekday);
-    if (dayAvailability.length === 0) return [];
-
-    const duration = selectedService.duration_minutes;
-    const now = new Date();
-    const isSelectedDateToday = selectedDate === toLocalDateInput(now);
-    const generatedSlots: SlotOption[] = [];
-
-    for (const row of dayAvailability) {
-      const startWindow = combineDateAndTime(selectedDate, row.start_time);
-      const endWindow = combineDateAndTime(selectedDate, row.end_time);
-      const stepMinutes = Math.max(duration + row.slot_interval_minutes, 1);
-
-      let cursor = new Date(startWindow);
-      while (true) {
-        const slotStart = new Date(cursor);
-        const slotEnd = new Date(slotStart.getTime() + duration * 60 * 1000);
-
-        if (slotEnd > endWindow) break;
-        if (isSelectedDateToday && slotStart <= now) {
-          cursor = new Date(cursor.getTime() + stepMinutes * 60 * 1000);
-          continue;
-        }
-
-        const overlapsBlocked = blockedRows.some((blocked) =>
-          hasOverlap(slotStart, slotEnd, new Date(blocked.start_at), new Date(blocked.end_at))
-        );
-        const overlapsBooked = bookedSlots.some((booked) =>
-          hasOverlap(
-            slotStart,
-            slotEnd,
-            combineDateAndTime(selectedDate, booked.start_time),
-            combineDateAndTime(selectedDate, booked.end_time)
-          )
-        );
-
-        if (!overlapsBlocked && !overlapsBooked) {
-          generatedSlots.push({
-            startTime: normalizeTime(slotStart.toTimeString()),
-            endTime: normalizeTime(slotEnd.toTimeString()),
-          });
-        }
-
-        cursor = new Date(cursor.getTime() + stepMinutes * 60 * 1000);
-      }
-    }
-
-    return generatedSlots;
+    return generateSlots({
+      selectedDate,
+      serviceDurationMinutes: selectedService.duration_minutes,
+      availabilityRows,
+      blockedRows,
+      bookedSlots,
+    });
   }, [availabilityRows, blockedRows, bookedSlots, selectedDate, selectedService]);
+
+  // ── 5) Submissão do agendamento ───────────────────────────────────────────────
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -336,12 +263,10 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     if (insertedAppointment?.id) {
       fetch("/api/notify-booking", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ appointmentId: insertedAppointment.id }),
       }).catch(() => {
-        // Do not block booking confirmation if notification fails.
+        // Notificação não bloqueia a confirmação do agendamento.
       });
     }
 
@@ -375,6 +300,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
         </p>
       ) : null}
 
+      {/* ── Passo 1: Serviço ────────────────────────────────────────────────── */}
       <div className="elevated-card p-5">
         <h2 className="text-lg font-semibold text-[var(--ink-strong)]">1) Escolha o servico</h2>
         <div className="mt-3 grid gap-3">
@@ -407,6 +333,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
         </div>
       </div>
 
+      {/* ── Passo 2: Data e horário ─────────────────────────────────────────── */}
       <div className="elevated-card p-5">
         <h2 className="text-lg font-semibold text-[var(--ink-strong)]">2) Escolha data e horario</h2>
 
@@ -445,6 +372,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
         ) : null}
       </div>
 
+      {/* ── Passo 3: Dados do cliente ───────────────────────────────────────── */}
       <div className="elevated-card p-5">
         <h2 className="text-lg font-semibold text-[var(--ink-strong)]">3) Seus dados</h2>
 

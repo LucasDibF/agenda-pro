@@ -1,3 +1,9 @@
+// ─── Cliente Supabase para o app mobile ──────────────────────────────────────
+//
+// persistSession: true + AsyncStorage garante que a sessão sobrevive ao app
+// ser fechado e reaberto — sem isso o usuário precisaria logar toda vez.
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -12,7 +18,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
-    persistSession: false,
+    persistSession: true,
     detectSessionInUrl: false,
+    storage: AsyncStorage,
   },
 });
