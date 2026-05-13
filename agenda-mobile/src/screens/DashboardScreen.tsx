@@ -1,6 +1,6 @@
 // ─── Dashboard — KPIs, agendamento do dia e link de booking ──────────────────
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { supabase } from "../lib/supabase";
@@ -40,7 +40,7 @@ export function DashboardScreen({
   const bookingCode = professionalId;
   const bookingLink = `${webAppBaseUrl}/booking/${bookingCode}`;
 
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     setLoading(true);
     setErrorMessage("");
 
@@ -78,20 +78,17 @@ export function DashboardScreen({
     setActiveServicesCount(servicesRes.count ?? 0);
     setStatusSummary(
       normalizedToday.reduce(
-        (acc, item) => {
-          acc[item.status] += 1;
-          return acc;
-        },
+        (acc, item) => { acc[item.status] += 1; return acc; },
         { agendado: 0, confirmado: 0, concluido: 0, cancelado: 0 }
       )
     );
     setTodayAppointments(normalizedToday);
     setLoading(false);
-  };
+  }, [professionalId]);
 
   useEffect(() => {
     loadDashboard();
-  }, [professionalId, refreshSignal]);
+  }, [loadDashboard, refreshSignal]);
 
   const greeting = (() => {
     const hour = new Date().getHours();
@@ -101,50 +98,51 @@ export function DashboardScreen({
   })();
 
   const longDate = new Intl.DateTimeFormat("pt-BR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
   }).format(new Date());
 
   const firstAppointment = useMemo(
     () =>
-      todayAppointments.find((appointment) => {
-        const active =
-          appointment.status === "agendado" || appointment.status === "confirmado";
+      todayAppointments.find((a) => {
+        const active = a.status === "agendado" || a.status === "confirmado";
         if (!active) return false;
-        return combineDateAndTime(toIsoDate(), appointment.end_time) > new Date();
+        return combineDateAndTime(toIsoDate(), a.end_time) > new Date();
       }) ?? null,
     [todayAppointments]
   );
 
+  const showCopyFeedback = (msg: string) => {
+    setCopyFeedback(msg);
+    setTimeout(() => setCopyFeedback(""), 2000);
+  };
+
   const handleCopyBookingCode = async () => {
     await Clipboard.setStringAsync(bookingCode);
-    setCopyFeedback("Código copiado.");
+    showCopyFeedback("Código copiado.");
   };
 
   const handleCopyBookingLink = async () => {
     await Clipboard.setStringAsync(bookingLink);
-    setCopyFeedback("Link de agendamento copiado.");
+    showCopyFeedback("Link copiado.");
   };
 
   return (
     <View style={styles.sectionContainer}>
-      {/* ── Card de boas-vindas ────────────────────────────────────────────── */}
+      {/* ── Card de boas-vindas ──────────────────────────────────────────── */}
       <AnimatedSection
         delay={40}
         style={[styles.dashboardFeatureCard, { borderColor: theme.border, backgroundColor: theme.accent }]}
       >
-        <View>
-          <Text style={[styles.dashboardFeatureGreeting, { color: "#f8f8f8" }]}>{greeting}</Text>
-          <Text style={[styles.dashboardFeatureTitle, { color: "#f8f8f8" }]}>{displayName}</Text>
-          <Text style={[styles.dashboardDate, { color: "#e8f0f3" }]}>{longDate}</Text>
-        </View>
+        <Text style={[styles.dashboardFeatureGreeting, { color: "#f8f8f8" }]}>{greeting}</Text>
+        <Text style={[styles.dashboardFeatureTitle, { color: "#f8f8f8" }]}>{displayName}</Text>
+        <Text style={[styles.dashboardDate, { color: "#e8f0f3" }]}>{longDate}</Text>
       </AnimatedSection>
 
-      {errorMessage ? <Text style={styles.errorBanner}>{errorMessage}</Text> : null}
+      {errorMessage ? (
+        <Text style={styles.errorBanner}>{errorMessage}</Text>
+      ) : null}
 
-      {/* ── Código e link de agendamento ──────────────────────────────────── */}
+      {/* ── Código e link ────────────────────────────────────────────────── */}
       <AnimatedSection delay={90} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Código de Agendamento</Text>
@@ -163,7 +161,7 @@ export function DashboardScreen({
         {copyFeedback ? <Text style={styles.successBanner}>{copyFeedback}</Text> : null}
       </AnimatedSection>
 
-      {/* ── Próximo agendamento do dia ─────────────────────────────────────── */}
+      {/* ── Próximo agendamento ──────────────────────────────────────────── */}
       <AnimatedSection delay={140} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Agenda de Hoje</Text>
@@ -176,7 +174,7 @@ export function DashboardScreen({
           <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>Carregando...</Text>
         ) : !firstAppointment ? (
           <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
-            Nenhum agendamento hoje.
+            Nenhum agendamento ativo hoje.
           </Text>
         ) : (
           <View style={[styles.todayAppointmentCard, { backgroundColor: theme.accentSoft, borderColor: theme.border }]}>
@@ -193,7 +191,7 @@ export function DashboardScreen({
         )}
       </AnimatedSection>
 
-      {/* ── Resumo de status do dia ────────────────────────────────────────── */}
+      {/* ── Resumo de status ─────────────────────────────────────────────── */}
       <AnimatedSection delay={190} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Visão Geral</Text>
@@ -204,19 +202,14 @@ export function DashboardScreen({
         <View style={styles.summaryGrid}>
           {(
             [
-              { key: "agendado", label: "Agendado", style: styles.summaryValueBlue },
-              { key: "confirmado", label: "Confirmado", style: styles.summaryValueYellow },
-              { key: "concluido", label: "Concluído", style: styles.summaryValueGreen },
-              { key: "cancelado", label: "Cancelado", style: styles.summaryValueGray },
+              { key: "agendado", label: "Agendado", valueStyle: styles.summaryValueBlue },
+              { key: "confirmado", label: "Confirmado", valueStyle: styles.summaryValueYellow },
+              { key: "concluido", label: "Concluído", valueStyle: styles.summaryValueGreen },
+              { key: "cancelado", label: "Cancelado", valueStyle: styles.summaryValueGray },
             ] as const
-          ).map(({ key, label, style: valueStyle }) => (
-            <View
-              key={key}
-              style={[styles.summaryCard, { backgroundColor: theme.background, borderColor: theme.border }]}
-            >
-              <Text style={valueStyle}>
-                {loading ? "--" : String(statusSummary[key])}
-              </Text>
+          ).map(({ key, label, valueStyle }) => (
+            <View key={key} style={[styles.summaryCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <Text style={valueStyle}>{loading ? "—" : String(statusSummary[key])}</Text>
               <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>{label}</Text>
             </View>
           ))}

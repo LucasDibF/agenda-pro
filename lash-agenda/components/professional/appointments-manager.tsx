@@ -1,17 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
-import type {
-  AppointmentStatus,
-  AppointmentRow,
-  AppointmentSelectRow,
-} from "@/types/domain";
+import type { AppointmentStatus, AppointmentRow, AppointmentSelectRow } from "@/types/domain";
 import { toLocalDateInput } from "@/lib/utils/date";
 import { buildWhatsappUrl } from "@/lib/utils/format";
 import { ensureProfessionalProfile } from "@/lib/utils/profile";
-
-// ─── Opções de status exibidas no select ─────────────────────────────────────
 
 const statusOptions: Array<{ value: AppointmentStatus; label: string }> = [
   { value: "agendado", label: "Agendado" },
@@ -19,8 +13,6 @@ const statusOptions: Array<{ value: AppointmentStatus; label: string }> = [
   { value: "cancelado", label: "Cancelado" },
   { value: "concluido", label: "Concluido" },
 ];
-
-// ─── Componente ───────────────────────────────────────────────────────────────
 
 export function AppointmentsManager() {
   const [professionalId, setProfessionalId] = useState<string | null>(null);
@@ -33,11 +25,16 @@ export function AppointmentsManager() {
 
   const totalAppointments = appointments.length;
   const confirmedAppointments = useMemo(
-    () => appointments.filter((item) => item.status === "confirmado").length,
+    () => appointments.filter((a) => a.status === "confirmado").length,
     [appointments]
   );
 
-  const fetchAppointments = async (userId: string, dateInput: string) => {
+  const showSuccess = (msg: string) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(""), 3500);
+  };
+
+  const fetchAppointments = useCallback(async (userId: string, dateInput: string) => {
     const { data, error } = await supabase
       .from("appointments")
       .select(
@@ -47,29 +44,21 @@ export function AppointmentsManager() {
       .eq("appointment_date", dateInput)
       .order("start_time", { ascending: true });
 
-    if (error) {
-      setErrorMessage(error.message);
-      return;
-    }
+    if (error) { setErrorMessage(error.message); return; }
 
     const normalized = ((data ?? []) as AppointmentSelectRow[]).map((row) => ({
       ...row,
       service: Array.isArray(row.service) ? (row.service[0] ?? null) : row.service,
     }));
-
     setAppointments(normalized);
-  };
+  }, []);
 
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
       setErrorMessage("");
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError || !user) {
         setErrorMessage("Nao foi possivel carregar o usuario logado.");
         setLoading(false);
@@ -89,16 +78,11 @@ export function AppointmentsManager() {
     };
 
     loadInitialData();
-  }, [selectedDate]);
+  }, [selectedDate, fetchAppointments]);
 
   const handleChangeStatus = async (appointmentId: string, status: AppointmentStatus) => {
-    if (!professionalId) {
-      setErrorMessage("Usuario nao identificado. Faca login novamente.");
-      return;
-    }
-
+    if (!professionalId) return;
     setErrorMessage("");
-    setSuccessMessage("");
     setUpdatingId(appointmentId);
 
     const { error } = await supabase
@@ -106,16 +90,12 @@ export function AppointmentsManager() {
       .update({ status })
       .eq("id", appointmentId);
 
-    if (error) {
-      setErrorMessage(error.message);
-      setUpdatingId(null);
-      return;
-    }
+    if (error) { setErrorMessage(error.message); setUpdatingId(null); return; }
 
     setAppointments((current) =>
-      current.map((item) => (item.id === appointmentId ? { ...item, status } : item))
+      current.map((a) => (a.id === appointmentId ? { ...a, status } : a))
     );
-    setSuccessMessage("Status atualizado com sucesso.");
+    showSuccess("Status atualizado.");
     setUpdatingId(null);
   };
 
@@ -133,32 +113,28 @@ export function AppointmentsManager() {
             <input
               type="date"
               value={selectedDate}
-              onChange={(event) => setSelectedDate(event.target.value)}
+              onChange={(e) => setSelectedDate(e.target.value)}
               className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
             />
           </label>
 
           <article className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
             <p className="text-xs text-neutral-500">Total no dia</p>
-            <p className="text-2xl font-bold text-neutral-900">{totalAppointments}</p>
+            <p className="text-2xl font-bold text-neutral-900">{loading ? "—" : totalAppointments}</p>
           </article>
 
           <article className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
             <p className="text-xs text-neutral-500">Confirmados</p>
-            <p className="text-2xl font-bold text-neutral-900">{confirmedAppointments}</p>
+            <p className="text-2xl font-bold text-neutral-900">{loading ? "—" : confirmedAppointments}</p>
           </article>
         </div>
 
         {errorMessage ? (
-          <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-            {errorMessage}
-          </p>
+          <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorMessage}</p>
         ) : null}
 
         {successMessage ? (
-          <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
-            {successMessage}
-          </p>
+          <p className="mt-4 rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{successMessage}</p>
         ) : null}
       </div>
 
@@ -181,8 +157,8 @@ export function AppointmentsManager() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
                     <p className="font-semibold text-neutral-900">
-                      {appointment.start_time.slice(0, 5)} - {appointment.end_time.slice(0, 5)} •{" "}
-                      {appointment.service?.name ?? "Serviço"}
+                      {appointment.start_time.slice(0, 5)} — {appointment.end_time.slice(0, 5)} •{" "}
+                      {appointment.service?.name ?? "Servico"}
                     </p>
                     <p className="text-sm text-neutral-700">{appointment.customer_name}</p>
                     <p className="text-sm text-neutral-500">
@@ -200,18 +176,13 @@ export function AppointmentsManager() {
                       <select
                         value={appointment.status}
                         disabled={updatingId === appointment.id}
-                        onChange={(event) =>
-                          handleChangeStatus(
-                            appointment.id,
-                            event.target.value as AppointmentStatus
-                          )
+                        onChange={(e) =>
+                          handleChangeStatus(appointment.id, e.target.value as AppointmentStatus)
                         }
                         className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none ring-pink-300 focus:ring disabled:opacity-70"
                       >
-                        {statusOptions.map((statusOption) => (
-                          <option key={statusOption.value} value={statusOption.value}>
-                            {statusOption.label}
-                          </option>
+                        {statusOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
                     </label>

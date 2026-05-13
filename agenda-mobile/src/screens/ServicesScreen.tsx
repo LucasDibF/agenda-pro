@@ -1,7 +1,7 @@
 // ─── Tela de serviços — CRUD completo ────────────────────────────────────────
 
-import { useEffect, useMemo, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, Pressable, Text, TextInput, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import type { ServiceRow, ThemeTokens } from "../types";
 import { formatMoneyBr } from "../utils";
@@ -25,11 +25,21 @@ export function ServicesScreen({ professionalId, theme }: ServicesScreenProps) {
   const [error, setError] = useState("");
 
   const activeCount = useMemo(
-    () => services.filter((item) => item.is_active).length,
+    () => services.filter((s) => s.is_active).length,
     [services]
   );
 
-  const loadServices = async () => {
+  const showMessage = (msg: string) => {
+    setMessage(msg);
+    setTimeout(() => setMessage(""), 3500);
+  };
+
+  const showError = (msg: string) => {
+    setError(msg);
+    setTimeout(() => setError(""), 5000);
+  };
+
+  const loadServices = useCallback(async () => {
     setLoading(true);
     setError("");
     const { data, error: fetchError } = await supabase
@@ -38,18 +48,12 @@ export function ServicesScreen({ professionalId, theme }: ServicesScreenProps) {
       .eq("professional_id", professionalId)
       .order("created_at", { ascending: false });
 
-    if (fetchError) {
-      setError(fetchError.message);
-      setLoading(false);
-      return;
-    }
+    if (fetchError) { showError(fetchError.message); setLoading(false); return; }
     setServices((data ?? []) as ServiceRow[]);
     setLoading(false);
-  };
-
-  useEffect(() => {
-    loadServices();
   }, [professionalId]);
+
+  useEffect(() => { loadServices(); }, [loadServices]);
 
   const handleCreate = async () => {
     setMessage("");
@@ -58,18 +62,9 @@ export function ServicesScreen({ professionalId, theme }: ServicesScreenProps) {
     const parsedDuration = Number(duration);
     const parsedPrice = Number(price.replace(",", "."));
 
-    if (!name.trim()) {
-      setError("Informe o nome do serviço.");
-      return;
-    }
-    if (!Number.isFinite(parsedDuration) || parsedDuration <= 0) {
-      setError("Duração inválida.");
-      return;
-    }
-    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
-      setError("Valor inválido.");
-      return;
-    }
+    if (!name.trim()) { showError("Informe o nome do serviço."); return; }
+    if (!Number.isFinite(parsedDuration) || parsedDuration <= 0) { showError("Duração inválida."); return; }
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) { showError("Valor inválido."); return; }
 
     setSubmitting(true);
     const { error: insertError } = await supabase.from("services").insert({
@@ -81,54 +76,48 @@ export function ServicesScreen({ professionalId, theme }: ServicesScreenProps) {
       is_active: true,
     });
 
-    if (insertError) {
-      setError(insertError.message);
-      setSubmitting(false);
-      return;
-    }
+    if (insertError) { showError(insertError.message); setSubmitting(false); return; }
 
     setName("");
     setDuration("60");
     setPrice("");
     setDescription("");
-    setMessage("Serviço cadastrado com sucesso.");
     setSubmitting(false);
+    showMessage("Serviço cadastrado com sucesso.");
     await loadServices();
   };
 
   const toggleActive = async (service: ServiceRow) => {
-    setMessage("");
-    setError("");
     const { error: updateError } = await supabase
       .from("services")
       .update({ is_active: !service.is_active })
       .eq("id", service.id);
 
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
+    if (updateError) { showError(updateError.message); return; }
     setServices((current) =>
-      current.map((item) =>
-        item.id === service.id ? { ...item, is_active: !item.is_active } : item
-      )
+      current.map((s) => (s.id === service.id ? { ...s, is_active: !s.is_active } : s))
+    );
+  };
+
+  const confirmDelete = (service: ServiceRow) => {
+    Alert.alert(
+      "Excluir serviço",
+      `Deseja excluir "${service.name}"? Se houver agendamentos vinculados, ele será desativado.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Excluir", style: "destructive", onPress: () => handleDelete(service.id) },
+      ]
     );
   };
 
   const handleDelete = async (serviceId: string) => {
-    setMessage("");
-    setError("");
-
     const { count: linked, error: linkedError } = await supabase
       .from("appointments")
       .select("id", { count: "exact", head: true })
       .eq("professional_id", professionalId)
       .eq("service_id", serviceId);
 
-    if (linkedError) {
-      setError(linkedError.message);
-      return;
-    }
+    if (linkedError) { showError(linkedError.message); return; }
 
     if ((linked ?? 0) > 0) {
       const { error: updateError } = await supabase
@@ -137,15 +126,11 @@ export function ServicesScreen({ professionalId, theme }: ServicesScreenProps) {
         .eq("id", serviceId)
         .eq("professional_id", professionalId);
 
-      if (updateError) {
-        setError(updateError.message);
-        return;
-      }
-
+      if (updateError) { showError(updateError.message); return; }
       setServices((current) =>
-        current.map((item) => (item.id === serviceId ? { ...item, is_active: false } : item))
+        current.map((s) => (s.id === serviceId ? { ...s, is_active: false } : s))
       );
-      setMessage("Serviço com agendamentos não pode ser excluído. Ele foi desativado.");
+      showMessage("Serviço com agendamentos foi desativado (não pode ser excluído).");
       return;
     }
 
@@ -155,13 +140,9 @@ export function ServicesScreen({ professionalId, theme }: ServicesScreenProps) {
       .eq("id", serviceId)
       .eq("professional_id", professionalId);
 
-    if (deleteError) {
-      setError(deleteError.message);
-      return;
-    }
-
-    setMessage("Serviço excluído.");
-    setServices((current) => current.filter((item) => item.id !== serviceId));
+    if (deleteError) { showError(deleteError.message); return; }
+    setServices((current) => current.filter((s) => s.id !== serviceId));
+    showMessage("Serviço excluído.");
   };
 
   return (
@@ -201,10 +182,12 @@ export function ServicesScreen({ professionalId, theme }: ServicesScreenProps) {
           style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
           multiline
         />
+
         <Pressable
           onPress={handleCreate}
           disabled={submitting}
-          style={[styles.button, styles.refreshButton, { backgroundColor: theme.buttonPrimary }]}
+          style={[styles.button, styles.refreshButton, { backgroundColor: theme.buttonPrimary },
+            submitting && styles.buttonDisabled]}
         >
           <Text style={[styles.buttonText, { color: theme.buttonPrimaryText }]}>
             {submitting ? "Salvando..." : "Cadastrar serviço"}
@@ -218,7 +201,7 @@ export function ServicesScreen({ professionalId, theme }: ServicesScreenProps) {
       {/* ── Lista de serviços ──────────────────────────────────────────────── */}
       <AnimatedSection delay={130} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
-          Serviços cadastrados ({activeCount} ativos de {services.length})
+          Serviços ({activeCount} ativos de {services.length})
         </Text>
 
         {loading ? (
@@ -239,8 +222,8 @@ export function ServicesScreen({ professionalId, theme }: ServicesScreenProps) {
                   {service.description}
                 </Text>
               ) : null}
-              <Text style={[styles.appointmentMeta, { color: theme.textSecondary }]}>
-                {service.is_active ? "Ativo" : "Inativo"}
+              <Text style={[styles.appointmentMeta, { color: service.is_active ? theme.accent : theme.textSecondary }]}>
+                {service.is_active ? "● Ativo" : "○ Inativo"}
               </Text>
               <View style={styles.actionRow}>
                 <Pressable
@@ -251,7 +234,7 @@ export function ServicesScreen({ professionalId, theme }: ServicesScreenProps) {
                     {service.is_active ? "Desativar" : "Ativar"}
                   </Text>
                 </Pressable>
-                <Pressable style={styles.smallDangerButton} onPress={() => handleDelete(service.id)}>
+                <Pressable style={styles.smallDangerButton} onPress={() => confirmDelete(service)}>
                   <Text style={styles.smallDangerButtonText}>Excluir</Text>
                 </Pressable>
               </View>

@@ -4,7 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Linking, Pressable, Text, View } from "react-native";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { supabase } from "../lib/supabase";
-import type { AppointmentRow, AppointmentSelectRow, AppointmentStatus, AvailabilityRow, ThemeTokens } from "../types";
+import type {
+  AppointmentRow,
+  AppointmentSelectRow,
+  AppointmentStatus,
+  AvailabilityRow,
+  ThemeTokens,
+} from "../types";
 import { statusOptions } from "../constants/theme";
 import {
   toIsoDate,
@@ -40,10 +46,16 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  const showSuccess = (msg: string) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(""), 3500);
+  };
+
   const loadAppointments = async () => {
     setLoading(true);
     setErrorMessage("");
     setSuccessMessage("");
+
     const { data, error } = await supabase
       .from("appointments")
       .select(
@@ -53,11 +65,7 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
       .eq("appointment_date", selectedDate)
       .order("start_time", { ascending: true });
 
-    if (error) {
-      setErrorMessage(error.message);
-      setLoading(false);
-      return;
-    }
+    if (error) { setErrorMessage(error.message); setLoading(false); return; }
 
     const normalized = ((data ?? []) as AppointmentSelectRow[]).map((row) => ({
       ...row,
@@ -72,18 +80,18 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
   }, [professionalId, selectedDate]);
 
   const reschedulingAppointment = useMemo(
-    () => appointments.find((item) => item.id === reschedulingId) ?? null,
+    () => appointments.find((a) => a.id === reschedulingId) ?? null,
     [appointments, reschedulingId]
   );
 
-  // ── Carrega slots disponíveis ao abrir reagendamento ─────────────────────
+  // ── Carrega slots para reagendamento ──────────────────────────────────────
   useEffect(() => {
-    const loadRescheduleSlots = async () => {
-      if (!reschedulingId || !reschedulingAppointment) {
-        setRescheduleSlotOptions([]);
-        return;
-      }
+    if (!reschedulingId || !reschedulingAppointment) {
+      setRescheduleSlotOptions([]);
+      return;
+    }
 
+    const loadRescheduleSlots = async () => {
       setLoadingRescheduleSlots(true);
 
       const weekday = new Date(`${rescheduleDate}T00:00:00`).getDay();
@@ -140,7 +148,7 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
 
       setRescheduleSlotOptions(slots);
       setRescheduleStartTime((current) => {
-        if (slots.some((slot) => slot.startTime === current)) return current;
+        if (slots.some((s) => s.startTime === current)) return current;
         return slots[0]?.startTime ?? "";
       });
       setLoadingRescheduleSlots(false);
@@ -151,7 +159,6 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
 
   const handleChangeStatus = async (appointment: AppointmentRow, status: AppointmentStatus) => {
     setErrorMessage("");
-    setSuccessMessage("");
     setUpdatingId(appointment.id);
 
     const { error } = await supabase
@@ -160,42 +167,26 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
       .eq("id", appointment.id)
       .eq("professional_id", professionalId);
 
-    if (error) {
-      setErrorMessage(error.message);
-      setUpdatingId(null);
-      return;
-    }
+    if (error) { setErrorMessage(error.message); setUpdatingId(null); return; }
 
     setAppointments((current) =>
-      current.map((item) => (item.id === appointment.id ? { ...item, status } : item))
+      current.map((a) => (a.id === appointment.id ? { ...a, status } : a))
     );
-
-    setSuccessMessage(
+    showSuccess(
       status === "confirmado"
-        ? "Status confirmado. Use o botão WhatsApp para avisar a cliente."
-        : "Status atualizado com sucesso."
+        ? "Confirmado! Use o botão WhatsApp para avisar a cliente."
+        : "Status atualizado."
     );
     setUpdatingId(null);
   };
 
   const handleOpenWhatsapp = async (appointment: AppointmentRow) => {
     setErrorMessage("");
-    setSuccessMessage("");
-
     const url = buildWhatsappUrlForAppointment(appointment);
-    if (!url) {
-      setErrorMessage("Telefone da cliente invalido para WhatsApp.");
-      return;
-    }
-
+    if (!url) { setErrorMessage("Telefone inválido para WhatsApp."); return; }
     const canOpen = await Linking.canOpenURL(url);
-    if (!canOpen) {
-      setErrorMessage("Nao foi possivel abrir o WhatsApp neste dispositivo.");
-      return;
-    }
-
+    if (!canOpen) { setErrorMessage("Não foi possível abrir o WhatsApp neste dispositivo."); return; }
     await Linking.openURL(url);
-    setSuccessMessage("WhatsApp aberto para envio da mensagem.");
   };
 
   const handleDateChange = (event: DateTimePickerEvent, pickedDate?: Date) => {
@@ -207,10 +198,17 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
   const handleStartReschedule = (appointment: AppointmentRow) => {
     setErrorMessage("");
     setSuccessMessage("");
+    setRescheduleSlotOptions([]); // limpa slots do reagendamento anterior
     setReschedulingId(appointment.id);
     setRescheduleDate(appointment.appointment_date);
     setRescheduleStartTime(formatHour(appointment.start_time));
     setShowRescheduleDatePicker(false);
+  };
+
+  const handleCancelReschedule = () => {
+    setReschedulingId(null);
+    setRescheduleSlotOptions([]); // limpa para evitar flash ao abrir próximo
+    setRescheduleStartTime("");
   };
 
   const handleRescheduleDateChange = (event: DateTimePickerEvent, pickedDate?: Date) => {
@@ -220,14 +218,13 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
   };
 
   const handleSaveReschedule = async (appointment: AppointmentRow) => {
-    setErrorMessage("");
-    setSuccessMessage("");
+    // Guarda contra state desincronizado
+    if (appointment.id !== reschedulingId) return;
+
     setSavingReschedule(true);
+    setErrorMessage("");
 
-    const selectedSlot = rescheduleSlotOptions.find(
-      (slot) => slot.startTime === rescheduleStartTime
-    );
-
+    const selectedSlot = rescheduleSlotOptions.find((s) => s.startTime === rescheduleStartTime);
     if (!selectedSlot) {
       setErrorMessage("Selecione um horário disponível.");
       setSavingReschedule(false);
@@ -244,21 +241,17 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
       .eq("id", appointment.id)
       .eq("professional_id", professionalId);
 
-    if (error) {
-      setErrorMessage(error.message);
-      setSavingReschedule(false);
-      return;
-    }
+    if (error) { setErrorMessage(error.message); setSavingReschedule(false); return; }
 
-    setSuccessMessage("Agendamento reagendado com sucesso.");
-    setReschedulingId(null);
+    handleCancelReschedule();
     setSavingReschedule(false);
     await loadAppointments();
+    showSuccess("Reagendado com sucesso.");
   };
 
   return (
     <View style={styles.sectionContainer}>
-      {/* ── Seletor de data ────────────────────────────────────────────────── */}
+      {/* ── Seletor de data ──────────────────────────────────────────────── */}
       <AnimatedSection delay={70} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Agenda por dia</Text>
         <Pressable
@@ -296,7 +289,7 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
         {successMessage ? <Text style={styles.successBanner}>{successMessage}</Text> : null}
       </AnimatedSection>
 
-      {/* ── Lista de agendamentos ──────────────────────────────────────────── */}
+      {/* ── Lista de agendamentos ────────────────────────────────────────── */}
       <AnimatedSection delay={130} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
           Lista do dia ({appointments.length})
@@ -314,14 +307,15 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
           appointments.map((appointment) => (
             <View key={appointment.id} style={[styles.listCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
               <Text style={[styles.appointmentTitle, { color: theme.textPrimary }]}>
-                {formatHour(appointment.start_time)} - {formatHour(appointment.end_time)} •{" "}
+                {formatHour(appointment.start_time)} — {formatHour(appointment.end_time)} •{" "}
                 {appointment.service?.name ?? "Serviço"}
               </Text>
               <Text style={[styles.appointmentCustomer, { color: theme.textPrimary }]}>
                 {appointment.customer_name}
               </Text>
               <Text style={[styles.appointmentMeta, { color: theme.textSecondary }]}>
-                {appointment.customer_phone} • {appointment.customer_email}
+                {appointment.customer_phone}
+                {appointment.customer_email ? ` • ${appointment.customer_email}` : ""}
               </Text>
               {appointment.notes ? (
                 <Text style={[styles.appointmentMeta, { color: theme.textSecondary }]}>
@@ -349,16 +343,14 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
                 <View style={[styles.rescheduleCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
                   <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Novo horário</Text>
 
-                  <View style={styles.actionRow}>
-                    <Pressable
-                      style={[styles.smallButton, { backgroundColor: theme.background, borderColor: theme.border }]}
-                      onPress={() => setShowRescheduleDatePicker(true)}
-                    >
-                      <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>
-                        Data: {formatDateBr(rescheduleDate)}
-                      </Text>
-                    </Pressable>
-                  </View>
+                  <Pressable
+                    style={[styles.smallButton, { backgroundColor: theme.background, borderColor: theme.border }]}
+                    onPress={() => setShowRescheduleDatePicker(true)}
+                  >
+                    <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>
+                      Data: {formatDateBr(rescheduleDate)}
+                    </Text>
+                  </Pressable>
 
                   {showRescheduleDatePicker ? (
                     <DateTimePicker
@@ -389,19 +381,14 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
                               styles.statusButton,
                               { backgroundColor: theme.background, borderColor: theme.border },
                               selected && styles.statusButtonSelected,
-                              selected && {
-                                backgroundColor: theme.buttonPrimary,
-                                borderColor: theme.buttonPrimary,
-                              },
+                              selected && { backgroundColor: theme.buttonPrimary, borderColor: theme.buttonPrimary },
                             ]}
                           >
-                            <Text
-                              style={[
-                                styles.statusButtonText,
-                                { color: selected ? theme.buttonPrimaryText : theme.textSecondary },
-                              ]}
-                            >
-                              {slot.startTime} - {slot.endTime}
+                            <Text style={[
+                              styles.statusButtonText,
+                              { color: selected ? theme.buttonPrimaryText : theme.textSecondary },
+                            ]}>
+                              {slot.startTime} — {slot.endTime}
                             </Text>
                           </Pressable>
                         );
@@ -411,9 +398,13 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
 
                   <View style={styles.actionRow}>
                     <Pressable
-                      style={[styles.smallButton, { backgroundColor: theme.background, borderColor: theme.border }]}
+                      style={[
+                        styles.smallButton,
+                        { backgroundColor: theme.background, borderColor: theme.border },
+                        (savingReschedule || loadingRescheduleSlots) && styles.buttonDisabled,
+                      ]}
                       onPress={() => handleSaveReschedule(appointment)}
-                      disabled={savingReschedule}
+                      disabled={savingReschedule || loadingRescheduleSlots || rescheduleSlotOptions.length === 0}
                     >
                       <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>
                         {savingReschedule ? "Salvando..." : "Salvar reagendamento"}
@@ -421,7 +412,7 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
                     </Pressable>
                     <Pressable
                       style={styles.smallDangerButton}
-                      onPress={() => setReschedulingId(null)}
+                      onPress={handleCancelReschedule}
                       disabled={savingReschedule}
                     >
                       <Text style={styles.smallDangerButtonText}>Cancelar</Text>
@@ -430,7 +421,7 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
                 </View>
               ) : null}
 
-              {/* ── Botões de status ────────────────────────────────────── */}
+              {/* ── Botões de status ─────────────────────────────────────── */}
               <View style={styles.statusRow}>
                 {statusOptions.map((option) => {
                   const selected = appointment.status === option.value;
@@ -447,13 +438,11 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
                         updatingId === appointment.id && styles.buttonDisabled,
                       ]}
                     >
-                      <Text
-                        style={[
-                          styles.statusButtonText,
-                          { color: selected ? theme.buttonPrimaryText : theme.textSecondary },
-                          selected && styles.statusButtonTextSelected,
-                        ]}
-                      >
+                      <Text style={[
+                        styles.statusButtonText,
+                        { color: selected ? theme.buttonPrimaryText : theme.textSecondary },
+                        selected && styles.statusButtonTextSelected,
+                      ]}>
                         {option.label}
                       </Text>
                     </Pressable>

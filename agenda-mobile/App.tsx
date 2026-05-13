@@ -1,12 +1,8 @@
 // ─── Ponto de entrada do app mobile ──────────────────────────────────────────
-//
-// Responsabilidade única: gerenciar estado de sessão e rotear entre
-// LoginScreen (não autenticado) e ProfessionalArea (autenticado).
-// Todo o restante do app está em src/screens/ e src/components/.
 
 import { useEffect, useState } from "react";
 import * as Notifications from "expo-notifications";
-import { ActivityIndicator, Text } from "react-native";
+import { ActivityIndicator, Pressable, Text } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./src/lib/supabase";
@@ -14,7 +10,6 @@ import { LoginScreen } from "./src/screens/LoginScreen";
 import { ProfessionalArea } from "./src/screens/ProfessionalArea";
 import { styles } from "./src/styles";
 
-// Configura como notificações são exibidas quando o app está em primeiro plano
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -24,17 +19,34 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Timeout para evitar tela de loading presa indefinidamente
+const getSessionWithTimeout = () =>
+  Promise.race([
+    supabase.auth.getSession(),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("timeout")), 10_000)
+    ),
+  ]);
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
+  const [sessionError, setSessionError] = useState(false);
+
+  const loadSession = async () => {
+    setLoadingSession(true);
+    setSessionError(false);
+    try {
+      const { data } = await getSessionWithTimeout();
+      setSession(data.session);
+    } catch {
+      setSessionError(true);
+    } finally {
+      setLoadingSession(false);
+    }
+  };
 
   useEffect(() => {
-    const loadSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      setLoadingSession(false);
-    };
-
     loadSession();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
@@ -43,19 +55,38 @@ export default function App() {
       }
     );
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    return () => { authListener.subscription.unsubscribe(); };
   }, []);
 
-  return (
-    <SafeAreaProvider>
-      {loadingSession ? (
+  if (loadingSession) {
+    return (
+      <SafeAreaProvider>
         <SafeAreaView style={styles.loadingContainer}>
           <ActivityIndicator />
           <Text style={styles.loadingText}>Carregando sessão...</Text>
         </SafeAreaView>
-      ) : !session ? (
+      </SafeAreaProvider>
+    );
+  }
+
+  if (sessionError) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.loadingContainer}>
+          <Text style={[styles.loadingText, { marginBottom: 12 }]}>
+            Sem conexão. Verifique sua internet.
+          </Text>
+          <Pressable onPress={loadSession} style={styles.button}>
+            <Text style={styles.buttonText}>Tentar novamente</Text>
+          </Pressable>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
+  return (
+    <SafeAreaProvider>
+      {!session ? (
         <LoginScreen />
       ) : (
         <ProfessionalArea session={session} />
