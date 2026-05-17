@@ -5,8 +5,8 @@
     "version": "1.0.0",
     "scheme": "agenda-mobile",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/icon-light.png",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -16,18 +16,42 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.lucasfreitasdib.agendamobile",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "icon": {
+        "light": "./assets/icon-light.png",
+        "dark": "./assets/icon-dark.png"
+      },
+      "userInterfaceStyle": "automatic",
+      "splash": {
+        "dark": {
+          "backgroundColor": "#000000",
+          "resizeMode": "contain",
+          "image": "./assets/icon-dark.png"
+        }
+      }
     },
     "android": {
+      "userInterfaceStyle": "automatic",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "splash": {
+        "dark": {
+          "backgroundColor": "#000000",
+          "resizeMode": "contain",
+          "image": "./assets/icon-dark.png"
+        }
+      },
+      "package": "com.lucasfreitasdib.agendamobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

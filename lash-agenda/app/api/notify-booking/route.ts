@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
+/** Teto da função (Vercel free costuma truncar perto de 10s; alinhar com expoPushTimeoutMs). */
+export const maxDuration = 10;
+
 type NotifyBody = {
   appointmentId?: string;
 };
@@ -48,21 +51,41 @@ export async function POST(request: Request) {
   const dateBr = `${day}/${month}/${year}`;
   const hour = appointment.start_time.slice(0, 5);
 
-  const expoResponse = await fetch("https://exp.host/--/api/v2/push/send", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      to: profile.push_token,
-      title: "Novo agendamento",
-      body: `${appointment.customer_name} marcou para ${dateBr} as ${hour}.`,
-      sound: "default",
-    }),
-  });
+  /** Menor que `maxDuration` da rota menos os round-trips Supabase típicos. */
+  const expoPushTimeoutMs = 6500;
 
-  if (!expoResponse.ok) {
-    return NextResponse.json({ error: "Falha ao enviar push para Expo." }, { status: 502 });
+  try {
+    const expoResponse = await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      signal: AbortSignal.timeout(expoPushTimeoutMs),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        to: profile.push_token,
+        title: "Novo agendamento",
+        body: `${appointment.customer_name} marcou para ${dateBr} as ${hour}.`,
+        sound: "default",
+      }),
+    });
+
+    if (!expoResponse.ok) {
+      return NextResponse.json({ error: "Falha ao enviar push para Expo." }, { status: 502 });
+    }
+  } catch (err: unknown) {
+    const errorName =
+      err instanceof Error
+        ? err.name
+        : err && typeof err === "object" && "name" in err && typeof (err as { name: unknown }).name === "string"
+          ? (err as { name: string }).name
+          : "";
+    if (errorName === "AbortError" || errorName === "TimeoutError") {
+      return NextResponse.json(
+        { error: "Timeout ao contatar servidor de push. Tente novamente ou verifique Expo." },
+        { status: 504 }
+      );
+    }
+    throw err;
   }
 
   return NextResponse.json({ ok: true });

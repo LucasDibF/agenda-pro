@@ -92,7 +92,7 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-[var(--foreground)]/75">
+      <div className="text-body-secondary grid grid-cols-7 gap-2 text-center text-xs font-semibold">
         {weekdayLabels.map((label) => (
           <span key={label}>{label}</span>
         ))}
@@ -110,10 +110,10 @@ export function BookingCalendar({ selectedDate, onSelectDate }: BookingCalendarP
               onClick={() => onSelectDate(day.dateKey)}
               className={`rounded-lg border px-2 py-2 text-sm transition ${
                 isSelected
-                  ? "border-[var(--accent-dark)] bg-[var(--accent)] text-white"
+                  ? "border-[var(--accent-dark)] bg-[var(--accent-dark)] text-white shadow-sm shadow-[rgba(0,0,0,0.35)]"
                   : day.isCurrentMonth
                     ? "border-[var(--line)] bg-[var(--surface)] text-[var(--ink-strong)] hover:bg-[var(--surface-soft)]"
-                    : "border-[var(--line)] bg-[var(--surface-soft)] text-[var(--foreground)]/55"
+                    : "text-body-muted border-[var(--line)] bg-[var(--surface-soft)]"
               } ${day.isPast ? "cursor-not-allowed opacity-40" : ""}`}
             >
               {day.date.getDate()}

@@ -54,7 +54,7 @@ Preencha:
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxxxxxxxxxxxxxxxx
-EXPO_PUBLIC_WEB_APP_URL=https://seu-dominio.vercel.app
+EXPO_PUBLIC_WEB_APP_URL=https://lash-agenda.vercel.app
 ```
 
 ## Rodar localmente

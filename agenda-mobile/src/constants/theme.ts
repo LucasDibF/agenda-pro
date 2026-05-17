@@ -4,13 +4,15 @@ import type { AppTab, AppointmentStatus, ParticleDepth, ThemeMode, ThemeTokens }
 
 // ─── Versão do app ────────────────────────────────────────────────────────────
 
-export const APP_VERSION = "1.0.0";
+export const APP_VERSION = "1.0.1";
 
 // ─── URL base do web app (para links de booking) ─────────────────────────────
+// Produção padrão: lash-agenda.vercel.app (override via EXPO_PUBLIC_WEB_APP_URL / EAS).
 
-export const webAppBaseUrl =
-  process.env.EXPO_PUBLIC_WEB_APP_URL?.trim() ||
-  "https://lash-agenda-k66ipli1j-lucas-freitas-dibs-projects.vercel.app";
+const resolvedWebUrl =
+  process.env.EXPO_PUBLIC_WEB_APP_URL?.trim() || "https://lash-agenda.vercel.app";
+
+export const webAppBaseUrl = resolvedWebUrl.replace(/\/+$/, "");
 
 // ─── Temas (dark / light) ────────────────────────────────────────────────────
 

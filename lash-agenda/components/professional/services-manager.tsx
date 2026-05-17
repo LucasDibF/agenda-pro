@@ -235,7 +235,7 @@ export function ServicesManager() {
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
               required
               className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
-              placeholder="Ex: Volume Brasileiro"
+              placeholder="Ex: Manicure completa"
             />
           </label>
 

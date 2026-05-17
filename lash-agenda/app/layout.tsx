@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
@@ -18,9 +18,46 @@ const brandSerif = Playfair_Display({
   weight: ["500", "600", "700"],
 });
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0c10" },
+  ],
+};
+
 export const metadata: Metadata = {
   title: "Agenda Online",
   description: "App de agendamento online para profissionais",
+  icons: {
+    icon: [
+      {
+        url: "/icons/icon-light.png",
+        type: "image/png",
+        sizes: "755x1024",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/icons/icon-dark.png",
+        type: "image/png",
+        sizes: "755x1024",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+    apple: [
+      {
+        url: "/icons/icon-light.png",
+        sizes: "180x180",
+        type: "image/png",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        url: "/icons/icon-dark.png",
+        sizes: "180x180",
+        type: "image/png",
+        media: "(prefers-color-scheme: dark)",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({

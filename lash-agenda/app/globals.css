@@ -16,18 +16,22 @@
   --accent: #8b5cf6;
   --accent-dark: #6d3fe0;
   --ink-strong: #171b26;
+  --text-secondary: #4f5668;
+  --text-muted: #61697c;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #000000;
-    --foreground: #ececf3;
-    --surface: #12141a;
-    --surface-soft: #1b1e27;
-    --line: #2a2e3a;
-    --accent: #a78bfa;
-    --accent-dark: #8b5cf6;
-    --ink-strong: #f5f6fb;
+    --background: #0a0c10;
+    --foreground: #e8eaf2;
+    --surface: #14171f;
+    --surface-soft: #1e232e;
+    --line: #303849;
+    --accent: #b8a1ff;
+    --accent-dark: #9d73f7;
+    --ink-strong: #f4f6fd;
+    --text-secondary: #aab1c6;
+    --text-muted: #8b93a9;
   }
 
   body {
@@ -169,6 +173,156 @@ body {
     position: relative;
     z-index: 1;
   }
+
+  .booking-wave-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.7;
+  }
+
+  .booking-wave-svg {
+    position: absolute;
+    left: -8%;
+    width: 116%;
+    height: 150px;
+    overflow: visible;
+    animation: waveDrift 14s ease-in-out infinite;
+  }
+
+  .booking-wave-line {
+    fill: none;
+    stroke-linecap: round;
+    stroke-width: 1.4;
+    stroke: color-mix(in oklab, var(--accent) 36%, transparent);
+  }
+
+  .booking-wave-line.soft {
+    stroke: color-mix(in oklab, var(--accent-dark) 26%, transparent);
+    stroke-width: 1.1;
+  }
+
+  .booking-wave-a {
+    top: 10%;
+    animation-delay: -2s;
+  }
+
+  .booking-wave-b {
+    top: 34%;
+    animation-duration: 18s;
+    animation-delay: -7s;
+  }
+
+  .booking-wave-c {
+    top: 60%;
+    animation-duration: 16s;
+    animation-delay: -4s;
+  }
+
+  .callout-warning {
+    @apply rounded-xl border px-3 py-2 text-sm;
+    border-color: #fcd34d;
+    background: color-mix(in oklab, #fffbeb 100%, transparent);
+    color: #92400e;
+  }
+
+  .callout-danger {
+    @apply rounded-lg border px-3 py-2 text-sm;
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
+  }
+
+  .callout-success {
+    @apply rounded-lg border px-3 py-2 text-sm;
+    border-color: #a7f3d0;
+    background: #ecfdf5;
+    color: #065f46;
+  }
+
+  .text-body-secondary {
+    color: var(--text-secondary);
+  }
+
+  .text-body-muted {
+    color: var(--text-muted);
+  }
+
+  .text-link-accent {
+    color: var(--accent-dark);
+    text-decoration-thickness: 1px;
+  }
+
+  .text-link-accent:hover {
+    text-decoration-line: underline;
+    filter: brightness(1.12);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .hero-shell {
+      background: linear-gradient(135deg, var(--surface) 0%, #1a1730 45%, var(--surface-soft) 100%);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+    }
+
+    .elevated-card {
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .muted-card {
+      background: color-mix(in oklab, var(--surface-soft) 86%, var(--line) 14%);
+    }
+
+    .btn-soft {
+      background: var(--surface-soft);
+      border-color: var(--line);
+      color: var(--foreground);
+    }
+
+    .btn-soft:hover {
+      background: color-mix(in oklab, var(--surface-soft) 72%, var(--line) 28%);
+    }
+
+    .input-shell {
+      background: var(--surface-soft);
+      color: var(--ink-strong);
+    }
+
+    .input-shell::placeholder {
+      color: var(--text-muted);
+    }
+
+    .brand-word {
+      color: var(--accent);
+    }
+
+    .booking-animated-shell {
+      background: color-mix(in oklab, var(--surface) 90%, var(--accent) 6%);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .booking-wave-layer {
+      opacity: 0.35;
+    }
+
+    .callout-warning {
+      border-color: #b45309;
+      background: color-mix(in oklab, #451a03 55%, var(--surface) 45%);
+      color: #fcd34d;
+    }
+
+    .callout-danger {
+      border-color: #b91c1c;
+      background: color-mix(in oklab, #450a0a 45%, var(--surface) 55%);
+      color: #fecaca;
+    }
+
+    .callout-success {
+      border-color: #047857;
+      background: color-mix(in oklab, #052e16 42%, var(--surface) 58%);
+      color: #bbf7d0;
+    }
+  }
 }
 
 @keyframes floatBlob {
@@ -180,5 +334,17 @@ body {
   }
   100% {
     transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes waveDrift {
+  0% {
+    transform: translate3d(-2%, 0, 0);
+  }
+  50% {
+    transform: translate3d(2%, 8px, 0);
+  }
+  100% {
+    transform: translate3d(-2%, 0, 0);
   }
 }

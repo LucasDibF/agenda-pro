@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import type {
   ServiceRow,
@@ -11,7 +11,7 @@ import type {
 } from "@/types/domain";
 import { toLocalDateInput, formatDateBr } from "@/lib/utils/date";
 import { formatCurrencyBRL } from "@/lib/utils/format";
-import { generateSlots } from "@/lib/utils/slots";
+import { generateSlots, normalizeTime } from "@/lib/utils/slots";
 import { BookingCalendar } from "@/components/public/booking-calendar";
 
 // ─── Estado do formulário do cliente ─────────────────────────────────────────
@@ -27,6 +27,13 @@ const emptyForm: BookingFormState = {
   customerPhone: "",
   notes: "",
 };
+
+function slotOptionToBookedSlotRow(slot: SlotOption): BookedSlotRow {
+  return {
+    start_time: /^\d{2}:\d{2}$/.test(slot.startTime) ? `${slot.startTime}:00` : slot.startTime,
+    end_time: /^\d{2}:\d{2}$/.test(slot.endTime) ? `${slot.endTime}:00` : slot.endTime,
+  };
+}
 
 type BookingFlowProps = {
   professionalIdentifier: string;
@@ -48,6 +55,12 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const selectedDateRef = useRef(selectedDate);
+
+  useEffect(() => {
+    selectedDateRef.current = selectedDate;
+  }, [selectedDate]);
 
   const selectedService = useMemo(
     () => services.find((s) => s.id === selectedServiceId) ?? null,
@@ -256,9 +269,42 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     // Limpa só os dados do cliente e o horário; mantém data e serviço selecionados
     setForm(emptyForm);
     setSelectedStartTime("");
+
+    // Atualização otimista da grade; RPC só confirma em background
+    const bookedSnapshot = slotOptionToBookedSlotRow(selectedSlot);
+    setBookedSlots((prev) => {
+      if (
+        prev.some(
+          (b) =>
+            normalizeTime(b.start_time) === normalizeTime(bookedSnapshot.start_time) &&
+            normalizeTime(b.end_time) === normalizeTime(bookedSnapshot.end_time),
+        )
+      ) {
+        return prev;
+      }
+      return [...prev, bookedSnapshot].sort((a, b) =>
+        normalizeTime(a.start_time).localeCompare(normalizeTime(b.start_time)),
+      );
+    });
+
     showSuccess(
       `Agendamento confirmado! ${selectedService.name} em ${formatDateBr(selectedDate)}. Aguardamos voce!`
     );
+
+    setSubmitting(false);
+
+    const snapshotDate = selectedDate;
+
+    void supabase
+      .rpc("get_booked_slots", {
+        p_professional_id: professionalId,
+        p_date: snapshotDate,
+      })
+      .then(({ data, error }) => {
+        if (error || data == null) return;
+        if (selectedDateRef.current !== snapshotDate) return;
+        setBookedSlots(data as BookedSlotRow[]);
+      });
 
     // Notifica a profissional (fire-and-forget)
     if (inserted?.id) {
@@ -268,14 +314,6 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
         body: JSON.stringify({ appointmentId: inserted.id }),
       }).catch(() => {});
     }
-
-    // Atualiza slots da data para refletir o horário recém-agendado
-    const { data: refreshed } = await supabase.rpc("get_booked_slots", {
-      p_professional_id: professionalId,
-      p_date: selectedDate,
-    });
-    setBookedSlots((refreshed ?? []) as BookedSlotRow[]);
-    setSubmitting(false);
   };
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -283,7 +321,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
   if (loading) {
     return (
       <div className="elevated-card p-6">
-        <p className="text-sm text-[var(--foreground)]/75">Carregando disponibilidade...</p>
+        <p className="text-body-secondary text-sm">Carregando disponibilidade...</p>
       </div>
     );
   }
@@ -291,13 +329,13 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
   return (
     <section className="space-y-5">
       {services.length === 0 ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50/85 px-3 py-2 text-sm text-amber-800">
+        <p className="callout-warning">
           Esta URL nao possui servicos ativos. Confirme se voce abriu o link correto da profissional.
         </p>
       ) : null}
 
       {availabilityRows.length === 0 ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50/85 px-3 py-2 text-sm text-amber-800">
+        <p className="callout-warning">
           Esta profissional ainda nao configurou horarios de atendimento.
         </p>
       ) : null}
@@ -318,11 +356,11 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
               }`}
             >
               <p className="font-semibold text-[var(--ink-strong)]">{service.name}</p>
-              <p className="text-sm text-[var(--foreground)]/75">
+              <p className="text-body-secondary text-sm">
                 {service.duration_minutes} min — {formatCurrencyBRL(service.price)}
               </p>
               {service.description ? (
-                <p className="mt-1 text-sm text-[var(--foreground)]/60">{service.description}</p>
+                <p className="text-body-muted mt-1 text-sm">{service.description}</p>
               ) : null}
             </button>
           ))}
@@ -350,7 +388,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-[var(--foreground)]/75">
+            <p className="text-body-secondary text-xs">
               Data selecionada:{" "}
               <span className="font-semibold text-[var(--ink-strong)]">
                 {new Intl.DateTimeFormat("pt-BR", { dateStyle: "full" }).format(
@@ -359,7 +397,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
               </span>
             </p>
             {slotOptions.length === 0 ? (
-              <p className="text-xs text-[var(--foreground)]/60">
+              <p className="text-body-muted text-xs">
                 Nenhum horario disponivel para esta data.
               </p>
             ) : null}
@@ -409,23 +447,23 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
 
           {/* ── Resumo antes de confirmar ───────────────────────────────── */}
           {isReadyToConfirm ? (
-            <div className="rounded-xl border border-[var(--accent)]/30 bg-[var(--surface-soft)] px-4 py-3 md:col-span-2">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent)]">
+            <div className="rounded-xl border border-[var(--accent)]/35 bg-[var(--surface-soft)] px-4 py-3 md:col-span-2">
+              <p className="text-[var(--accent-dark)] text-xs font-semibold uppercase tracking-widest">
                 Resumo do agendamento
               </p>
-              <div className="mt-2 space-y-0.5 text-sm">
+              <div className="mt-2 space-y-0.5 text-sm text-[var(--foreground)]">
                 <p>
-                  <span className="text-[var(--foreground)]/60">Servico:</span>{" "}
+                  <span className="text-body-muted">Servico:</span>{" "}
                   <span className="font-semibold text-[var(--ink-strong)]">{selectedService?.name}</span>
                 </p>
                 <p>
-                  <span className="text-[var(--foreground)]/60">Data e hora:</span>{" "}
+                  <span className="text-body-muted">Data e hora:</span>{" "}
                   <span className="font-semibold text-[var(--ink-strong)]">
                     {formatDateBr(selectedDate)} as {selectedStartTime}
                   </span>
                 </p>
                 <p>
-                  <span className="text-[var(--foreground)]/60">Cliente:</span>{" "}
+                  <span className="text-body-muted">Cliente:</span>{" "}
                   <span className="font-semibold text-[var(--ink-strong)]">
                     {form.customerName} • {form.customerPhone}
                   </span>
@@ -435,15 +473,11 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
           ) : null}
 
           {errorMessage ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 md:col-span-2">
-              {errorMessage}
-            </p>
+            <p className="callout-danger md:col-span-2">{errorMessage}</p>
           ) : null}
 
           {successMessage ? (
-            <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 md:col-span-2">
-              {successMessage}
-            </p>
+            <p className="callout-success md:col-span-2">{successMessage}</p>
           ) : null}
 
           <button

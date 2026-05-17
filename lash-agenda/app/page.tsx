@@ -1,21 +1,39 @@
 import Link from "next/link";
 
+const clienteSteps = [
+  {
+    title: "Serviço e valor",
+    body:
+      "Na sua página ficam só os serviços que você mantém ligados — com tempo de duração e preço bem explícitos, para ninguém chutar combinado.",
+  },
+  {
+    title: "Data e horário livre",
+    body:
+      "Ela marca o dia e enxerga só horários livres dentro da disponibilidade que você configurou, respeitando bloqueios e o que já estiver na agenda.",
+  },
+  {
+    title: "Confirmação rápida",
+    body:
+      "Sem login para suas clientes: você compartilha seu link público onde fizer mais sentido (bio, WhatsApp, story…) e cada uma fecha o próprio horário com nome e contato.",
+  },
+] as const;
+
 export default function HomePage() {
   return (
     <main className="page-shell">
       <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-14">
         <div className="hero-shell grid gap-10 lg:grid-cols-2">
           <div className="space-y-6">
-            <span className="w-fit rounded-full border border-[#E5E7EE] bg-[#FFFFFF] px-3 py-1 text-xs font-semibold tracking-wide text-[#8B5CF6]">
+            <span className="border-[var(--line)] bg-[var(--surface)] text-[var(--accent-dark)] inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold tracking-wide">
               AGENDA • MVP
             </span>
 
             <h1 className="title-display text-4xl font-bold sm:text-5xl">
               Seu estúdio,{" "}
-              <span className="italic text-[#7C4DFF]">sua potência.</span>
+              <span className="text-[var(--accent)] italic">sua potência.</span>
             </h1>
 
-            <p className="max-w-xl text-sm text-[#6E7380] sm:text-base">
+            <p className="text-body-secondary max-w-xl text-sm sm:text-base">
               O Agenda foi desenhado para profissionais que querem atender com
               excelência: agenda online, clientes e rotina organizados em uma única
               plataforma elegante.
@@ -31,24 +49,40 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-[1.75rem] border border-[#E5E7EE] bg-[#FFFFFF] p-8">
-            <div className="absolute -right-12 -top-14 h-48 w-48 rounded-full bg-[#DED6FF]/35 blur-2xl" />
-            <div className="absolute -bottom-16 -left-8 h-52 w-52 rounded-full bg-[#A78BFA]/28 blur-3xl" />
-            <div className="relative space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8B5CF6]">
-                Booking Preview
+          <div className="border-[var(--line)] bg-[var(--surface)] relative overflow-hidden rounded-[1.75rem] border p-8">
+            <div className="absolute -right-12 -top-14 h-48 w-48 rounded-full blur-2xl bg-[color-mix(in_oklab,var(--accent)_32%,transparent)]" />
+            <div className="absolute -bottom-16 -left-8 h-52 w-52 rounded-full blur-3xl bg-[color-mix(in_oklab,var(--accent-dark)_28%,transparent)]" />
+
+            <div className="relative space-y-5">
+              <p className="text-[var(--accent-dark)] text-xs font-semibold uppercase tracking-[0.18em]">
+                Experiência da sua cliente
               </p>
-              <div className="elevated-card p-4">
-                <p className="text-sm font-semibold text-[#1F2430]">Volume Brasileiro</p>
-                <p className="mt-1 text-xs text-[#6E7380]">90 min • R$ 180,00</p>
-              </div>
-              <div className="elevated-card p-4">
-                <p className="text-sm font-semibold text-[#1F2430]">Data: 12/05</p>
-                <p className="mt-1 text-xs text-[#6E7380]">Horarios livres: 09:00, 11:00, 14:30</p>
-              </div>
-              <Link href="/booking" className="btn-primary inline-flex">
-                Ver pagina publica de agendamento
+
+              <ul className="space-y-3">
+                {clienteSteps.map((step, i) => (
+                  <li key={step.title}>
+                    <div className="elevated-card flex gap-4 p-4">
+                      <span
+                        className="from-[var(--accent)] to-[var(--accent-dark)] shadow-sm flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-linear-to-br text-sm font-bold text-white"
+                        aria-hidden
+                      >
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0 space-y-0.5">
+                        <p className="text-[var(--ink-strong)] text-sm font-semibold">{step.title}</p>
+                        <p className="text-body-muted text-xs leading-snug">{step.body}</p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <Link href="/booking" className="btn-primary inline-flex w-full justify-center">
+                Ver página pública de agendamento
               </Link>
+              <p className="text-body-muted text-center text-[11px] leading-snug">
+                Um link atualiza junto com a sua conta: muda disponibilidade ou preço lá no painel, e o público já vê na hora.
+              </p>
             </div>
           </div>
         </div>

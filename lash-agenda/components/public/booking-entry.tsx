@@ -40,7 +40,7 @@ export function BookingEntry() {
       <main className="page-shell">
         <section className="mx-auto max-w-3xl space-y-4 px-6 py-12">
           <h1 className="title-display text-3xl font-bold">Agendar horario</h1>
-          <p className="text-[#6c5953]">Carregando link de agendamento...</p>
+          <p className="text-body-secondary">Carregando link de agendamento...</p>
         </section>
       </main>
     );
@@ -50,13 +50,13 @@ export function BookingEntry() {
     <main className="page-shell">
       <section className="mx-auto max-w-3xl space-y-6 px-6 py-12">
         <h1 className="title-display text-3xl font-bold">Agendar horario</h1>
-        <p className="text-[#6c5953]">
+        <p className="text-body-secondary">
           Entre com o codigo da profissional para abrir a pagina publica.
         </p>
 
         <form onSubmit={handleSubmit} className="elevated-card space-y-4 p-5">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#4f403b]">
+            <span className="text-sm font-medium text-[var(--ink-strong)]">
               Codigo da profissional
             </span>
             <input
@@ -73,9 +73,9 @@ export function BookingEntry() {
           </button>
         </form>
 
-        <p className="text-sm text-[#6c5953]">
+        <p className="text-body-secondary text-sm">
           Voce e a profissional?{" "}
-          <Link href="/professional" className="font-medium text-pink-700 hover:underline">
+          <Link href="/professional" className="text-link-accent font-semibold">
             Abra o painel
           </Link>{" "}
           para pegar seu link de agendamento.
