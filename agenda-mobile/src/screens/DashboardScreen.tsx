@@ -1,10 +1,11 @@
 // ─── Dashboard — KPIs, agendamento do dia e link de booking ──────────────────
 
 import { useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Linking, Pressable, Text, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
+import * as WebBrowser from "expo-web-browser";
 import type { ThemeTokens } from "../types";
-import { webAppBaseUrl } from "../constants/theme";
+import { publicBookingPageUrl } from "../constants/theme";
 import { toIsoDate, formatHour, formatMoneyBr, combineDateAndTime } from "../utils";
 import { styles } from "../styles";
 import { AnimatedSection } from "../components/AnimatedSection";
@@ -12,7 +13,7 @@ import { useDashboard } from "../hooks/useDashboard";
 
 type DashboardScreenProps = {
   professionalId: string;
-  /** Slug público igual à web (`booking_code` ou UUID). */
+  /** Segmento da URL (`booking_slug` a partir do nome, ou legado `booking_code` / UUID). */
   bookingPublicSlug: string;
   onOpenAgenda: () => void;
   theme: ThemeTokens;
@@ -37,7 +38,25 @@ export function DashboardScreen({
   }, [refreshSignal]);
 
   const bookingCode = bookingPublicSlug;
-  const bookingLink = `${webAppBaseUrl}/booking/${bookingPublicSlug}`;
+  const bookingLink = useMemo(() => publicBookingPageUrl(bookingPublicSlug), [bookingPublicSlug]);
+
+  const showCopyFeedback = (msg: string) => {
+    setCopyFeedback(msg);
+    setTimeout(() => setCopyFeedback(""), 3200);
+  };
+
+  const openBookingInBrowser = async () => {
+    const url = bookingLink;
+    try {
+      await WebBrowser.openBrowserAsync(url);
+    } catch {
+      try {
+        await Linking.openURL(url);
+      } catch {
+        showCopyFeedback("Não foi possível abrir o navegador. Copie o link e abra manualmente.");
+      }
+    }
+  };
 
   const firstAppointment = useMemo(
     () =>
@@ -46,7 +65,7 @@ export function DashboardScreen({
         if (!active) return false;
         return combineDateAndTime(toIsoDate(), a.end_time) > new Date();
       }) ?? null,
-    [data?.todayAppointments]
+    [data?.todayAppointments],
   );
 
   const greeting = (() => {
@@ -56,14 +75,13 @@ export function DashboardScreen({
     return "Boa noite!";
   })();
 
-  const longDate = new Intl.DateTimeFormat("pt-BR", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  const longDateRaw = new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
   }).format(new Date());
-
-  const showCopyFeedback = (msg: string) => {
-    setCopyFeedback(msg);
-    setTimeout(() => setCopyFeedback(""), 2000);
-  };
+  const longDate = longDateRaw.charAt(0).toUpperCase() + longDateRaw.slice(1);
 
   return (
     <View style={styles.sectionContainer}>
@@ -78,23 +96,31 @@ export function DashboardScreen({
 
       {error ? <Text style={styles.errorBanner}>{error.message}</Text> : null}
 
-      {/* ── Código e link ──────────────────────────────────────────────── */}
+      {/* ── Visão Geral ───────────────────────────────────────────────── */}
       <AnimatedSection delay={90} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Código de Agendamento</Text>
-          <Text style={[styles.cardSubtitleSmall, { color: theme.textSecondary }]}>Copie quando precisar</Text>
+          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Visão Geral</Text>
+          <Text style={[styles.cardSubtitleSmall, { color: theme.textSecondary }]}>
+            {data?.activeServicesCount ?? "—"} {(data?.activeServicesCount ?? 0) === 1 ? "serviço" : "serviços"}
+          </Text>
         </View>
-        <Text style={[styles.bookingCodeValue, { color: theme.textPrimary }]}>{bookingCode}</Text>
-        <Text style={[styles.bookingLinkValue, { color: theme.textSecondary }]}>{bookingLink}</Text>
-        <View style={styles.actionRow}>
-          <Pressable onPress={async () => { await Clipboard.setStringAsync(bookingCode); showCopyFeedback("Código copiado."); }} style={[styles.smallButton, { borderColor: theme.border }]}>
-            <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Copiar código</Text>
-          </Pressable>
-          <Pressable onPress={async () => { await Clipboard.setStringAsync(bookingLink); showCopyFeedback("Link copiado."); }} style={[styles.smallButton, { borderColor: theme.border }]}>
-            <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Copiar link</Text>
-          </Pressable>
+        <View style={styles.summaryGrid}>
+          {(
+            [
+              { key: "agendado", label: "Agendado", valueStyle: styles.summaryValueBlue },
+              { key: "confirmado", label: "Confirmado", valueStyle: styles.summaryValueYellow },
+              { key: "concluido", label: "Concluído", valueStyle: styles.summaryValueGreen },
+              { key: "cancelado", label: "Cancelado", valueStyle: styles.summaryValueGray },
+            ] as const
+          ).map(({ key, label, valueStyle }) => (
+            <View key={key} style={[styles.summaryCard, { backgroundColor: theme.accentSoft, borderColor: theme.border }]}>
+              <Text style={valueStyle}>
+                {isLoading ? "—" : String(data?.statusSummary[key] ?? 0)}
+              </Text>
+              <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>{label}</Text>
+            </View>
+          ))}
         </View>
-        {copyFeedback ? <Text style={styles.successBanner}>{copyFeedback}</Text> : null}
       </AnimatedSection>
 
       {/* ── Próximo agendamento ────────────────────────────────────────── */}
@@ -127,31 +153,32 @@ export function DashboardScreen({
         )}
       </AnimatedSection>
 
-      {/* ── Resumo de status ──────────────────────────────────────────── */}
+      {/* ── Link público ───────────────────────────────────────────── */}
       <AnimatedSection delay={190} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Visão Geral</Text>
-          <Text style={[styles.cardSubtitleSmall, { color: theme.textSecondary }]}>
-            {data?.activeServicesCount ?? "—"} {(data?.activeServicesCount ?? 0) === 1 ? "serviço" : "serviços"}
-          </Text>
+        <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Link de agendamento</Text>
+        <Text
+          selectable
+          style={[styles.bookingLinkHero, { color: theme.textPrimary, marginTop: 8 }]}
+          accessibilityRole="link"
+        >
+          {bookingLink}
+        </Text>
+        <View style={[styles.actionRow, { flexWrap: "wrap", marginTop: 12 }]}>
+          <Pressable onPress={async () => { await Clipboard.setStringAsync(bookingLink); showCopyFeedback("Link copiado."); }} style={[styles.smallButton, { borderColor: theme.border, backgroundColor: theme.card }]}>
+            <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Copiar link</Text>
+          </Pressable>
+          <Pressable onPress={openBookingInBrowser} style={[styles.smallButton, { borderColor: theme.border, backgroundColor: theme.card }]}>
+            <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Abrir link</Text>
+          </Pressable>
         </View>
-        <View style={styles.summaryGrid}>
-          {(
-            [
-              { key: "agendado", label: "Agendado", valueStyle: styles.summaryValueBlue },
-              { key: "confirmado", label: "Confirmado", valueStyle: styles.summaryValueYellow },
-              { key: "concluido", label: "Concluído", valueStyle: styles.summaryValueGreen },
-              { key: "cancelado", label: "Cancelado", valueStyle: styles.summaryValueGray },
-            ] as const
-          ).map(({ key, label, valueStyle }) => (
-            <View key={key} style={[styles.summaryCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
-              <Text style={valueStyle}>
-                {isLoading ? "—" : String(data?.statusSummary[key] ?? 0)}
-              </Text>
-              <Text style={[styles.summaryLabel, { color: theme.textSecondary }]}>{label}</Text>
-            </View>
-          ))}
+
+        <Text selectable style={[styles.bookingCodeValue, { color: theme.textPrimary, marginTop: 16 }]}>{bookingCode}</Text>
+        <View style={[styles.actionRow, { flexWrap: "wrap", marginTop: 8 }]}>
+          <Pressable onPress={async () => { await Clipboard.setStringAsync(bookingCode); showCopyFeedback("Código copiado."); }} style={[styles.smallButton, { borderColor: theme.border, backgroundColor: theme.card }]}>
+            <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Copiar código</Text>
+          </Pressable>
         </View>
+        {copyFeedback ? <Text style={styles.successBanner}>{copyFeedback}</Text> : null}
       </AnimatedSection>
     </View>
   );

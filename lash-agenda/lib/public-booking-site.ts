@@ -1,10 +1,12 @@
 /**
- * Domínio de produção onde as rotas /booking/[slug] estão funcionando.
- * Se `lash-agenda.vercel.app` estiver ligado a outro projeto na Vercel,
- * este fallback evita gerar links que quebram (alinhar com o app mobile).
+ * Deploy na Vercel onde `/booking` responde (`curl -I …/booking/x` → 200).
+ * `lash-agenda.vercel.app` ainda pode retornar 404 até estar ligado a este projeto.
+ *
+ * Origem copiável no painel: defina `NEXT_PUBLIC_BOOKING_APP_URL` (ver `.env.example`).
  */
 export const PUBLIC_BOOKING_APP_FALLBACK = "https://lash-agenda-plum.vercel.app";
 
+/** Hosts que não servem esta app no deploy atual — links copiados usam o FALLBACK plum. */
 const KNOWN_LEGACY_HOSTS = new Set([
   "lash-agenda.vercel.app",
   "lash-agenda-k66ipli1j-lucas-freitas-dibs-projects.vercel.app",
@@ -28,7 +30,7 @@ function normalizeOrigin(raw: string): string {
  * Ordem:
  * 1. `NEXT_PUBLIC_BOOKING_APP_URL` (ideal na Vercel = domínio em que `/booking` responde 200)
  * 2. `browserOrigin` (localhost em desenvolvimento)
- * 3. Fallback Plum (deploy production atual onde /booking existe)
+ * 3. Fallback Plum até `lash-agenda.vercel.app` servir este app
  */
 export function getPublicBookingSiteBase(browserOrigin?: string | null): string {
   const fromEnv = process.env.NEXT_PUBLIC_BOOKING_APP_URL;

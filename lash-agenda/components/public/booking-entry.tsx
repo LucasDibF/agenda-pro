@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { fetchBookingPublicSegment } from "@/lib/utils/profile-booking";
 
 export function BookingEntry() {
   const router = useRouter();
@@ -17,7 +18,9 @@ export function BookingEntry() {
       } = await supabase.auth.getUser();
 
       if (user?.id) {
-        router.replace(`/booking/${user.id}`);
+        const segment = await fetchBookingPublicSegment(supabase, user.id);
+
+        router.replace(`/booking/${encodeURIComponent(segment)}`);
         return;
       }
 
@@ -32,7 +35,7 @@ export function BookingEntry() {
 
     if (!professionalIdInput.trim()) return;
 
-    router.push(`/booking/${professionalIdInput.trim()}`);
+    router.push(`/booking/${encodeURIComponent(professionalIdInput.trim())}`);
   };
 
   if (loading) {
@@ -40,7 +43,7 @@ export function BookingEntry() {
       <main className="page-shell">
         <section className="mx-auto max-w-3xl space-y-4 px-6 py-12">
           <h1 className="title-display text-3xl font-bold">Agendar horario</h1>
-          <p className="text-body-secondary">Carregando link de agendamento...</p>
+          <p className="text-body-secondary">Carregando...</p>
         </section>
       </main>
     );
@@ -50,36 +53,27 @@ export function BookingEntry() {
     <main className="page-shell">
       <section className="mx-auto max-w-3xl space-y-6 px-6 py-12">
         <h1 className="title-display text-3xl font-bold">Agendar horario</h1>
-        <p className="text-body-secondary">
-          Entre com o codigo da profissional para abrir a pagina publica.
-        </p>
 
         <form onSubmit={handleSubmit} className="elevated-card space-y-4 p-5">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[var(--ink-strong)]">
-              Codigo da profissional
-            </span>
+            <span className="text-sm font-medium text-[var(--ink-strong)]">Profissional</span>
             <input
               type="text"
               value={professionalIdInput}
               onChange={(event) => setProfessionalIdInput(event.target.value)}
               className="input-shell"
-              placeholder="Ex: a1b2c3d4e5f6"
+              placeholder="Ex: maria-silva"
             />
           </label>
 
           <button type="submit" className="btn-primary w-full">
-            Abrir pagina de agendamento
+            Abrir
           </button>
         </form>
 
-        <p className="text-body-secondary text-sm">
-          Voce e a profissional?{" "}
-          <Link href="/professional" className="text-link-accent font-semibold">
-            Abra o painel
-          </Link>{" "}
-          para pegar seu link de agendamento.
-        </p>
+        <Link href="/professional" className="text-link-accent text-sm font-semibold">
+          Painel da profissional
+        </Link>
       </section>
     </main>
   );

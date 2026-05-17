@@ -386,5 +386,7 @@ begin
 end;
 $$;
 
+-- URLs amigáveis /booking/nome: aplicar também supabase/sql/mvp_profiles_booking_slug.sql (coluna booking_slug + RPC atualizada).
+
 revoke all on function public.resolve_professional_id(text) from public;
 grant execute on function public.resolve_professional_id(text) to anon, authenticated;

@@ -1,37 +1,59 @@
 // ─── Constantes de tema, layout e configuração ───────────────────────────────
 
 import type { AppTab, AppointmentStatus, ParticleDepth, ThemeMode, ThemeTokens } from "../types";
+import { normalizeBookingPublicSlug } from "../utils/booking-link";
 
 // ─── Versão do app ────────────────────────────────────────────────────────────
 
-export const APP_VERSION = "1.0.3";
+export const APP_VERSION = "1.0.11";
 
-// ─── URL base do web app (para links de booking) ─────────────────────────────
-// Produção canônica: env pode apontar para preview antigo; normalizamos host legado.
+// ─── URL base para links públicos `/booking/[slug]` ───────────────────────────
+// Alinhado com `NEXT_PUBLIC_BOOKING_APP_URL` + `PUBLIC_BOOKING_APP_FALLBACK` em web.
+// Prioridade em app: EXPO_PUBLIC_BOOKING_APP_URL → EXPO_PUBLIC_WEB_APP_URL → plum embutido.
 
-// Fallback alinhado com `lash-agenda/lib/public-booking-site.ts` (PUBLIC_BOOKING_APP_FALLBACK).
-// Produção válida onde /booking responde (alias Vercel atual).
-const CANONICAL_WEB_APP_URL = "https://lash-agenda-plum.vercel.app";
+const BOOKING_WORKING_SITE_URL = "https://lash-agenda-plum.vercel.app";
 
-const LEGACY_WEB_HOSTS = new Set([
-  "lash-agenda-k66ipli1j-lucas-freitas-dibs-projects.vercel.app",
+const LEGACY_BOOKING_HOSTS = new Set([
   "lash-agenda.vercel.app",
+  "lash-agenda-k66ipli1j-lucas-freitas-dibs-projects.vercel.app",
 ]);
 
-function resolveWebAppBaseUrl(): string {
-  const fromEnv = process.env.EXPO_PUBLIC_WEB_APP_URL?.trim();
-  const base = fromEnv?.length ? fromEnv : CANONICAL_WEB_APP_URL;
-  const withScheme = /^https?:\/\//i.test(base) ? base : `https://${base}`;
+function normalizeHttpsOrigin(raw: string): string {
+  const trimmed = raw.trim().replace(/\/+$/, "");
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   try {
-    const { hostname } = new URL(withScheme);
-    if (LEGACY_WEB_HOSTS.has(hostname)) return CANONICAL_WEB_APP_URL;
-    return withScheme.replace(/\/+$/, "");
+    const { protocol, hostname, host } = new URL(withScheme);
+    if (LEGACY_BOOKING_HOSTS.has(hostname)) return BOOKING_WORKING_SITE_URL.replace(/\/+$/, "");
+    return `${protocol}//${host}`.replace(/\/+$/, "");
   } catch {
-    return CANONICAL_WEB_APP_URL;
+    return BOOKING_WORKING_SITE_URL.replace(/\/+$/, "");
   }
 }
 
+function resolveWebAppBaseUrl(): string {
+  const fromEnv = process.env.EXPO_PUBLIC_WEB_APP_URL?.trim();
+  if (fromEnv?.length) return normalizeHttpsOrigin(fromEnv);
+  return BOOKING_WORKING_SITE_URL.replace(/\/+$/, "");
+}
+
+function resolveBookingAppBaseUrl(): string {
+  const bookingEnv = process.env.EXPO_PUBLIC_BOOKING_APP_URL?.trim();
+  if (bookingEnv?.length) return normalizeHttpsOrigin(bookingEnv);
+  return resolveWebAppBaseUrl();
+}
+
+/** Base do site (área logada, etc.); hoje costuma ser a mesma do deploy. */
 export const webAppBaseUrl = resolveWebAppBaseUrl();
+
+/** Base usada só para montar links de agendamento público. */
+export const bookingAppBaseUrl = resolveBookingAppBaseUrl();
+
+export function publicBookingPageUrl(bookingSlug: string): string {
+  const trimmed = normalizeBookingPublicSlug(bookingSlug);
+  const base = bookingAppBaseUrl.replace(/\/+$/, "");
+  if (!trimmed.length) return `${base}/booking/`;
+  return `${base}/booking/${encodeURIComponent(trimmed)}`;
+}
 
 // ─── Temas (dark / light) ────────────────────────────────────────────────────
 
@@ -88,7 +110,7 @@ export const PARTICLE_LAYOUT: Array<{
 // ─── Tabs de navegação ────────────────────────────────────────────────────────
 
 export const tabs: Array<{ value: AppTab; label: string }> = [
-  { value: "dashboard", label: "Dashboard" },
+  { value: "dashboard", label: "Painel" },
   { value: "services", label: "Serviços" },
   { value: "agenda", label: "Agenda" },
   { value: "availability", label: "Disponibilidade" },

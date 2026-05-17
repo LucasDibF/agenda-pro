@@ -23,14 +23,12 @@ type AvailabilityFormState = {
   weekday: string;
   startTime: string;
   endTime: string;
-  intervalMinutes: string;
 };
 
 const initialFormState: AvailabilityFormState = {
   weekday: "1",
   startTime: "08:00",
   endTime: "18:00",
-  intervalMinutes: "0",
 };
 
 // ─── Componente ───────────────────────────────────────────────────────────────
@@ -39,14 +37,24 @@ export function AvailabilityManager() {
   const [professionalId, setProfessionalId] = useState<string | null>(null);
   const [availabilityRows, setAvailabilityRows] = useState<AvailabilityRow[]>([]);
   const [form, setForm] = useState<AvailabilityFormState>(initialFormState);
+  const [breakStart, setBreakStart] = useState("");
+  const [breakEnd, setBreakEnd] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [submittingBreak, setSubmittingBreak] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [breakErrorMessage, setBreakErrorMessage] = useState("");
+  const [breakSuccessMessage, setBreakSuccessMessage] = useState("");
 
-  const resetFeedback = () => {
+  const resetAvailFeedback = () => {
     setErrorMessage("");
     setSuccessMessage("");
+  };
+
+  const resetBreakFeedback = () => {
+    setBreakErrorMessage("");
+    setBreakSuccessMessage("");
   };
 
   const fetchAvailability = async (userId: string) => {
@@ -65,10 +73,28 @@ export function AvailabilityManager() {
     setAvailabilityRows((data ?? []) as AvailabilityRow[]);
   };
 
+  const fetchDailyBreak = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("break_start_time, break_end_time")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error || !data?.break_start_time || !data?.break_end_time) {
+      setBreakStart("");
+      setBreakEnd("");
+      return;
+    }
+
+    setBreakStart(String(data.break_start_time).slice(0, 5));
+    setBreakEnd(String(data.break_end_time).slice(0, 5));
+  };
+
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true);
-      setErrorMessage("");
+      resetAvailFeedback();
+      resetBreakFeedback();
 
       const {
         data: { user },
@@ -90,15 +116,62 @@ export function AvailabilityManager() {
 
       setProfessionalId(user.id);
       await fetchAvailability(user.id);
+      await fetchDailyBreak(user.id);
       setLoading(false);
     };
 
     loadInitialData();
   }, []);
 
+  const handleSaveDailyBreak = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    resetBreakFeedback();
+    resetAvailFeedback();
+
+    if (!professionalId) {
+      setBreakErrorMessage("Usuario nao identificado. Faca login novamente.");
+      return;
+    }
+
+    const bs = breakStart.trim();
+    const be = breakEnd.trim();
+    const empty = bs === "" && be === "";
+    const partial = (bs === "") !== (be === "");
+
+    if (partial) {
+      setBreakErrorMessage("Preencha inicio e fim do intervalo ou deixe os dois em branco.");
+      return;
+    }
+
+    if (!empty && bs >= be) {
+      setBreakErrorMessage("Fim do intervalo deve ser maior que o inicio.");
+      return;
+    }
+
+    setSubmittingBreak(true);
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        break_start_time: empty ? null : bs.length === 5 ? `${bs}:00` : bs,
+        break_end_time: empty ? null : be.length === 5 ? `${be}:00` : be,
+      })
+      .eq("id", professionalId);
+
+    if (error) {
+      setBreakErrorMessage(error.message);
+      setSubmittingBreak(false);
+      return;
+    }
+
+    setBreakSuccessMessage(empty ? "Intervalo diario removido." : "Intervalo diario salvo.");
+    setSubmittingBreak(false);
+  };
+
   const handleCreateAvailability = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    resetFeedback();
+    resetAvailFeedback();
+    resetBreakFeedback();
 
     if (!professionalId) {
       setErrorMessage("Usuario nao identificado. Faca login novamente.");
@@ -106,15 +179,9 @@ export function AvailabilityManager() {
     }
 
     const weekday = Number(form.weekday);
-    const intervalMinutes = Number(form.intervalMinutes);
 
     if (form.startTime >= form.endTime) {
       setErrorMessage("Horario de fim deve ser maior que o horario de inicio.");
-      return;
-    }
-
-    if (!Number.isFinite(intervalMinutes) || intervalMinutes < 0 || intervalMinutes > 180) {
-      setErrorMessage("Intervalo invalido. Use entre 0 e 180 minutos.");
       return;
     }
 
@@ -125,7 +192,7 @@ export function AvailabilityManager() {
       weekday,
       start_time: form.startTime,
       end_time: form.endTime,
-      slot_interval_minutes: intervalMinutes,
+      slot_interval_minutes: 0,
       is_active: true,
     });
 
@@ -142,7 +209,8 @@ export function AvailabilityManager() {
   };
 
   const handleToggleActive = async (row: AvailabilityRow) => {
-    resetFeedback();
+    resetAvailFeedback();
+    resetBreakFeedback();
 
     const { error } = await supabase
       .from("availability")
@@ -162,7 +230,8 @@ export function AvailabilityManager() {
   };
 
   const handleDelete = async (rowId: string) => {
-    resetFeedback();
+    resetAvailFeedback();
+    resetBreakFeedback();
 
     const { error } = await supabase.from("availability").delete().eq("id", rowId);
     if (error) {
@@ -184,6 +253,55 @@ export function AvailabilityManager() {
   return (
     <section className="space-y-6">
       <div className="rounded-xl border border-neutral-200 bg-white p-5">
+        <h2 className="text-lg font-semibold text-neutral-900">Intervalo do dia</h2>
+        <p className="mt-1 text-sm text-neutral-600">
+          Defina um periodo fixo (ex.: almoco) em que ninguem pode agendar. Vale para todos os dias em
+          que voce tem disponibilidade.
+        </p>
+
+        <form onSubmit={handleSaveDailyBreak} className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-sm font-medium text-neutral-700">Inicio do intervalo</span>
+            <input
+              type="time"
+              value={breakStart}
+              onChange={(e) => setBreakStart(e.target.value)}
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-sm font-medium text-neutral-700">Fim do intervalo</span>
+            <input
+              type="time"
+              value={breakEnd}
+              onChange={(e) => setBreakEnd(e.target.value)}
+              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+            />
+          </label>
+
+          {breakErrorMessage ? (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 md:col-span-2">
+              {breakErrorMessage}
+            </p>
+          ) : null}
+
+          {breakSuccessMessage ? (
+            <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 md:col-span-2">
+              {breakSuccessMessage}
+            </p>
+          ) : null}
+
+          <button
+            type="submit"
+            disabled={submittingBreak}
+            className="w-full rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 md:col-span-2"
+          >
+            {submittingBreak ? "Salvando..." : "Salvar intervalo"}
+          </button>
+        </form>
+      </div>
+
+      <div className="rounded-xl border border-neutral-200 bg-white p-5">
         <h2 className="text-lg font-semibold text-neutral-900">
           Configurar horarios de atendimento
         </h2>
@@ -192,7 +310,7 @@ export function AvailabilityManager() {
         </p>
 
         <form onSubmit={handleCreateAvailability} className="mt-4 grid gap-4 md:grid-cols-2">
-          <label className="space-y-1">
+          <label className="space-y-1 md:col-span-2">
             <span className="text-sm font-medium text-neutral-700">Dia da semana</span>
             <select
               value={form.weekday}
@@ -205,20 +323,6 @@ export function AvailabilityManager() {
                 </option>
               ))}
             </select>
-          </label>
-
-          <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Intervalo (minutos)</span>
-            <input
-              type="number"
-              min={0}
-              max={180}
-              value={form.intervalMinutes}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, intervalMinutes: event.target.value }))
-              }
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
-            />
           </label>
 
           <label className="space-y-1">
@@ -290,8 +394,7 @@ export function AvailabilityManager() {
                     <div className="space-y-1">
                       <p className="font-semibold text-neutral-900">{weekdayLabel}</p>
                       <p className="text-sm text-neutral-600">
-                        {row.start_time.slice(0, 5)} - {row.end_time.slice(0, 5)} •
-                        Intervalo: {row.slot_interval_minutes} min
+                        {row.start_time.slice(0, 5)} – {row.end_time.slice(0, 5)}
                       </p>
                       <p className="text-xs text-neutral-500">
                         {row.is_active ? "Ativo" : "Inativo"}

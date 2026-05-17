@@ -19,7 +19,8 @@ export function AvailabilityScreen({ professionalId, theme }: AvailabilityScreen
   const [weekday, setWeekday] = useState<number>(1);
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("18:00");
-  const [intervalMinutes, setIntervalMinutes] = useState("0");
+  const [breakStart, setBreakStart] = useState("");
+  const [breakEnd, setBreakEnd] = useState("");
   const [editingRowId, setEditingRowId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -28,20 +29,37 @@ export function AvailabilityScreen({ professionalId, theme }: AvailabilityScreen
   const loadRows = async () => {
     setLoading(true);
     setError("");
-    const { data, error: fetchError } = await supabase
-      .from("availability")
-      .select("id, weekday, start_time, end_time, slot_interval_minutes, is_active")
-      .eq("professional_id", professionalId)
-      .order("weekday", { ascending: true })
-      .order("start_time", { ascending: true });
+    const [availRes, profileRes] = await Promise.all([
+      supabase
+        .from("availability")
+        .select("id, weekday, start_time, end_time, slot_interval_minutes, is_active")
+        .eq("professional_id", professionalId)
+        .order("weekday", { ascending: true })
+        .order("start_time", { ascending: true }),
+      supabase
+        .from("profiles")
+        .select("break_start_time, break_end_time")
+        .eq("id", professionalId)
+        .maybeSingle(),
+    ]);
 
-    if (fetchError) {
-      setError(fetchError.message);
+    if (availRes.error) {
+      setError(availRes.error.message);
       setLoading(false);
       return;
     }
 
-    setRows((data ?? []) as AvailabilityRow[]);
+    setRows((availRes.data ?? []) as AvailabilityRow[]);
+
+    const prof = profileRes.error ? null : profileRes.data;
+    if (prof?.break_start_time != null && prof?.break_end_time != null) {
+      setBreakStart(formatHour(String(prof.break_start_time)));
+      setBreakEnd(formatHour(String(prof.break_end_time)));
+    } else {
+      setBreakStart("");
+      setBreakEnd("");
+    }
+
     setLoading(false);
   };
 
@@ -53,21 +71,48 @@ export function AvailabilityScreen({ professionalId, theme }: AvailabilityScreen
     setWeekday(1);
     setStartTime("08:00");
     setEndTime("18:00");
-    setIntervalMinutes("0");
     setEditingRowId(null);
+  };
+
+  const handleSaveDailyBreak = async () => {
+    setMessage("");
+    setError("");
+    const bs = breakStart.trim();
+    const be = breakEnd.trim();
+    const empty = bs === "" && be === "";
+    const partial = (bs === "") !== (be === "");
+
+    if (partial) {
+      setError("Preencha início e fim do intervalo ou deixe os dois em branco.");
+      return;
+    }
+    if (!empty && bs >= be) {
+      setError("O fim do intervalo deve ser depois do início.");
+      return;
+    }
+
+    const { error: saveErr } = await supabase
+      .from("profiles")
+      .update({
+        break_start_time: empty ? null : bs.length === 5 ? `${bs}:00` : bs,
+        break_end_time: empty ? null : be.length === 5 ? `${be}:00` : be,
+      })
+      .eq("id", professionalId);
+
+    if (saveErr) {
+      setError(saveErr.message);
+      return;
+    }
+    setMessage(empty ? "Intervalo diário removido." : "Intervalo diário salvo.");
+    await loadRows();
   };
 
   const handleSaveAvailability = async () => {
     setMessage("");
     setError("");
 
-    const parsedInterval = Number(intervalMinutes);
     if (startTime >= endTime) {
       setError("Horário final deve ser maior que o inicial.");
-      return;
-    }
-    if (!Number.isFinite(parsedInterval) || parsedInterval < 0 || parsedInterval > 180) {
-      setError("Intervalo inválido (0 a 180).");
       return;
     }
 
@@ -78,7 +123,7 @@ export function AvailabilityScreen({ professionalId, theme }: AvailabilityScreen
           weekday,
           start_time: startTime,
           end_time: endTime,
-          slot_interval_minutes: parsedInterval,
+          slot_interval_minutes: 0,
         })
         .eq("id", editingRowId);
 
@@ -93,7 +138,7 @@ export function AvailabilityScreen({ professionalId, theme }: AvailabilityScreen
         weekday,
         start_time: startTime,
         end_time: endTime,
-        slot_interval_minutes: parsedInterval,
+        slot_interval_minutes: 0,
         is_active: true,
       });
 
@@ -145,11 +190,41 @@ export function AvailabilityScreen({ professionalId, theme }: AvailabilityScreen
     setWeekday(row.weekday);
     setStartTime(formatHour(row.start_time));
     setEndTime(formatHour(row.end_time));
-    setIntervalMinutes(String(row.slot_interval_minutes));
   };
 
   return (
     <View style={styles.sectionContainer}>
+      {/* ── Intervalo diário (almoco / pausa) ─────────────────────────────── */}
+      <AnimatedSection delay={40} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Intervalo do dia</Text>
+        <Text style={[styles.placeholderText, { color: theme.textSecondary, marginBottom: 8 }]}>
+          Horário em que você não aceita agendamentos (ex.: almoço). Vale para todos os dias com
+          disponibilidade.
+        </Text>
+        <TextInput
+          value={breakStart}
+          onChangeText={setBreakStart}
+          placeholder="Início do intervalo (HH:MM)"
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
+        />
+        <TextInput
+          value={breakEnd}
+          onChangeText={setBreakEnd}
+          placeholder="Fim do intervalo (HH:MM)"
+          placeholderTextColor={theme.textSecondary}
+          style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
+        />
+        <View style={styles.actionRow}>
+          <Pressable
+            onPress={handleSaveDailyBreak}
+            style={[styles.button, styles.refreshButton, { backgroundColor: theme.buttonPrimary }]}
+          >
+            <Text style={[styles.buttonText, { color: theme.buttonPrimaryText }]}>Salvar intervalo</Text>
+          </Pressable>
+        </View>
+      </AnimatedSection>
+
       {/* ── Formulário ─────────────────────────────────────────────────────── */}
       <AnimatedSection delay={70} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
@@ -199,14 +274,6 @@ export function AvailabilityScreen({ professionalId, theme }: AvailabilityScreen
           placeholderTextColor={theme.textSecondary}
           style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
         />
-        <TextInput
-          value={intervalMinutes}
-          onChangeText={setIntervalMinutes}
-          placeholder="Intervalo entre slots (min)"
-          placeholderTextColor={theme.textSecondary}
-          keyboardType="number-pad"
-          style={[styles.input, { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary }]}
-        />
 
         <View style={styles.actionRow}>
           <Pressable
@@ -248,8 +315,7 @@ export function AvailabilityScreen({ professionalId, theme }: AvailabilityScreen
                 {weekdayOptions.find((option) => option.value === row.weekday)?.label ?? `Dia ${row.weekday}`}
               </Text>
               <Text style={[styles.appointmentMeta, { color: theme.textSecondary }]}>
-                {formatHour(row.start_time)} - {formatHour(row.end_time)} • Intervalo{" "}
-                {row.slot_interval_minutes} min
+                {formatHour(row.start_time)} – {formatHour(row.end_time)}
               </Text>
               <Text style={[styles.appointmentMeta, { color: theme.textSecondary }]}>
                 {row.is_active ? "Ativo" : "Inativo"}

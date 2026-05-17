@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { publicBookingUrl } from "@/lib/public-booking-site";
+import { fetchBookingPublicSegment } from "@/lib/utils/profile-booking";
 
 export function BookingLinkCard() {
   const [bookingLink, setBookingLink] = useState("");
-  const [bookingCode, setBookingCode] = useState("");
   const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
@@ -17,17 +17,10 @@ export function BookingLinkCard() {
 
       if (!user) return;
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("booking_code")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      const code = profile?.booking_code || user.id;
-      setBookingCode(code);
+      const slug = await fetchBookingPublicSegment(supabase, user.id);
 
       if (typeof window !== "undefined") {
-        setBookingLink(publicBookingUrl(code, window.location.origin));
+        setBookingLink(publicBookingUrl(slug, window.location.origin));
       }
     };
 
@@ -43,12 +36,8 @@ export function BookingLinkCard() {
 
   return (
     <article className="elevated-card p-4 md:col-span-6">
-      <h2 className="text-sm font-medium text-[#6E7380]">Link publico de agendamento</h2>
-      <p className="mt-2 text-sm text-[#1F2430]">
-        Codigo de agendamento:{" "}
-        <span className="font-semibold">{bookingCode || "Carregando..."}</span>
-      </p>
-      <p className="mt-2 break-all text-sm text-[#1F2430]">
+      <h2 className="text-sm font-medium text-[#6E7380]">Link de agendamento</h2>
+      <p className="mt-3 break-all text-sm font-medium text-[#1F2430]">
         {bookingLink || "Carregando link..."}
       </p>
       <div className="mt-3 flex items-center gap-3">

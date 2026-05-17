@@ -306,7 +306,6 @@ export const styles = StyleSheet.create({
     marginTop: 2,
     color: "#7c8392",
     fontSize: 13,
-    textTransform: "capitalize",
   },
   cardSubtitleSmall: {
     color: "#9097a3",
@@ -362,6 +361,208 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     color: "#6d5a54",
   },
+
+  // ── Agenda (uso rápido no dia a dia) ───────────────────────────────────────
+  agendaHeaderCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 14,
+    gap: 12,
+  },
+  agendaNavRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 4,
+  },
+  agendaNavHit: {
+    minWidth: 48,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  agendaNavChevron: {
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  agendaDateCenter: {
+    flex: 1,
+    alignItems: "center",
+    gap: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
+    borderRadius: 14,
+    minHeight: 52,
+    justifyContent: "center",
+  },
+  agendaDateCaption: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.4,
+  },
+  agendaDateTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    fontFamily: "serif",
+  },
+  agendaDateSub: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  agendaHeaderActions: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "stretch",
+  },
+  agendaChipBtn: {
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    minHeight: 48,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  agendaChipBtnGrow: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    minHeight: 48,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  agendaChipBtnText: {
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  agendaListHeading: {
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  agendaAppointmentCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+    marginBottom: 10,
+  },
+  agendaAppointmentMainRow: {
+    flexDirection: "row",
+    gap: 14,
+    alignItems: "flex-start",
+  },
+  agendaTimeColumn: {
+    width: 58,
+    alignItems: "flex-start",
+    paddingTop: 2,
+  },
+  agendaTimeStart: {
+    fontSize: 22,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    fontVariant: ["tabular-nums"],
+  },
+  agendaTimeEnd: {
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 4,
+    fontVariant: ["tabular-nums"],
+  },
+  agendaClientBlock: {
+    flex: 1,
+    gap: 5,
+    minWidth: 0,
+  },
+  agendaClientName: {
+    fontSize: 18,
+    fontWeight: "800",
+  },
+  agendaServiceLine: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  agendaPhoneLine: {
+    fontSize: 14,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
+  },
+  agendaNotesLine: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "500",
+  },
+  agendaStatusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    alignSelf: "flex-start",
+  },
+  agendaStatusBadgeText: {
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.6,
+  },
+  agendaPrimaryRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 2,
+  },
+  agendaPrimaryBtn: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 50,
+  },
+  agendaPrimaryBtnOutline: {
+    borderWidth: 2,
+  },
+  agendaPrimaryBtnText: {
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  agendaSectionLabel: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+    marginTop: 6,
+    textTransform: "uppercase",
+  },
+  agendaStatusGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
+  agendaStatusGridBtn: {
+    width: "47.5%",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 48,
+  },
+  rescheduleSlotsScroll: {
+    marginTop: 8,
+    marginHorizontal: -4,
+    maxHeight: 54,
+  },
+  rescheduleSlotsScrollContent: {
+    gap: 8,
+    paddingHorizontal: 4,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
   bookingCodeValue: {
     color: "#1f2937",
     fontSize: 13,
@@ -370,6 +571,23 @@ export const styles = StyleSheet.create({
   bookingLinkValue: {
     color: "#6b7280",
     fontSize: 12,
+  },
+  bookingLinkHero: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontWeight: "500",
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  bookingShareHint: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  bookingCodeSectionLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 14,
   },
 
   // ── Dashboard – hoje ──────────────────────────────────────────────────────

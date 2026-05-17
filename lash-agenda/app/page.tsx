@@ -14,7 +14,7 @@ const clienteSteps = [
   {
     title: "Confirmação rápida",
     body:
-      "Sem login para suas clientes: você compartilha seu link público onde fizer mais sentido (bio, WhatsApp, story…) e cada uma fecha o próprio horário com nome e contato.",
+      "A cliente informa nome e contato para concluir sem criar conta.",
   },
 ] as const;
 
@@ -80,9 +80,6 @@ export default function HomePage() {
               <Link href="/booking" className="btn-primary inline-flex w-full justify-center">
                 Ver página pública de agendamento
               </Link>
-              <p className="text-body-muted text-center text-[11px] leading-snug">
-                Um link atualiza junto com a sua conta: muda disponibilidade ou preço lá no painel, e o público já vê na hora.
-              </p>
             </div>
           </div>
         </div>

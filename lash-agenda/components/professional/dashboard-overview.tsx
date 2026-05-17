@@ -52,7 +52,7 @@ export function DashboardOverview() {
           <div>
             <h2 className="title-display text-2xl font-bold">Visao geral do seu dia</h2>
             <p className="mt-1 text-sm text-[#6E7380]">
-              Acompanhe agendamentos, serviços e compartilhe seu link de booking.
+              Acompanhe agendamentos e servicos.
             </p>
           </div>
           <div className="flex gap-2">

@@ -7,6 +7,7 @@ import { StatusBar } from "expo-status-bar";
 import { supabase } from "../lib/supabase";
 import { AnimatedBackground } from "../components/AnimatedBackground";
 import { APP_VERSION } from "../constants/theme";
+import { friendlySupabaseMessage } from "../utils";
 import { styles } from "../styles";
 
 export function LoginScreen() {
@@ -32,7 +33,7 @@ export function LoginScreen() {
     });
 
     if (error) {
-      setErrorMessage(error.message);
+      setErrorMessage(friendlySupabaseMessage(error.message));
       setLoading(false);
       return;
     }

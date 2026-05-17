@@ -1,7 +1,7 @@
-// ─── Tela de agenda — visualização diária, status, reagendamento e WhatsApp ───
+// ─── Agenda — navegação rápida por dia e cartões fáceis de usar no trabalho ───
 
 import { useEffect, useMemo, useState } from "react";
-import { Linking, Pressable, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { useSWRConfig } from "swr";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { supabase } from "../lib/supabase";
@@ -13,6 +13,7 @@ import type {
 } from "../types";
 import { statusOptions } from "../constants/theme";
 import {
+  addDaysToIsoDate,
   toIsoDate,
   formatHour,
   formatDateBr,
@@ -22,13 +23,27 @@ import {
 } from "../utils";
 import { styles } from "../styles";
 import { AnimatedSection } from "../components/AnimatedSection";
-import { useAppointments, appointmentsKey } from "../hooks/useAppointments";
+import { useAppointments } from "../hooks/useAppointments";
 import { dashboardKey } from "../hooks/useDashboard";
 
 type AgendaScreenProps = {
   professionalId: string;
   theme: ThemeTokens;
 };
+
+function dayHeading(iso: string): string {
+  const today = toIsoDate();
+  const tomorrow = addDaysToIsoDate(today, 1);
+  const yesterday = addDaysToIsoDate(today, -1);
+  if (iso === today) return "Hoje";
+  if (iso === tomorrow) return "Amanhã";
+  if (iso === yesterday) return "Ontem";
+  return new Intl.DateTimeFormat("pt-BR", { weekday: "long" }).format(new Date(`${iso}T12:00:00`));
+}
+
+function statusLabel(status: AppointmentStatus): string {
+  return statusOptions.find((o) => o.value === status)?.label ?? status;
+}
 
 export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
   const [selectedDate, setSelectedDate] = useState(toIsoDate());
@@ -49,6 +64,8 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
   const { data: appointments = [], isLoading, mutate } = useAppointments(professionalId, selectedDate);
   const { mutate: globalMutate } = useSWRConfig();
 
+  const isToday = selectedDate === toIsoDate();
+
   const showSuccess = (msg: string) => {
     setSuccessMessage(msg);
     setTimeout(() => setSuccessMessage(""), 3500);
@@ -56,7 +73,7 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
 
   const reschedulingAppointment = useMemo(
     () => appointments.find((a) => a.id === reschedulingId) ?? null,
-    [appointments, reschedulingId]
+    [appointments, reschedulingId],
   );
 
   useEffect(() => {
@@ -72,7 +89,7 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
       const dayStartIso = new Date(`${rescheduleDate}T00:00:00`).toISOString();
       const dayEndIso = new Date(`${rescheduleDate}T23:59:59`).toISOString();
 
-      const [availabilityRes, blockedRes, bookedRes] = await Promise.all([
+      const [availabilityRes, blockedRes, bookedRes, profileRes] = await Promise.all([
         supabase
           .from("availability")
           .select("id, weekday, start_time, end_time, slot_interval_minutes, is_active")
@@ -93,6 +110,11 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
           .eq("appointment_date", rescheduleDate)
           .in("status", ["agendado", "confirmado"])
           .neq("id", reschedulingId),
+        supabase
+          .from("profiles")
+          .select("break_start_time, break_end_time")
+          .eq("id", professionalId)
+          .maybeSingle(),
       ]);
 
       if (availabilityRes.error || blockedRes.error || bookedRes.error) {
@@ -101,16 +123,26 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
         return;
       }
 
+      const prof = profileRes.error ? null : profileRes.data;
+      const dailyBreak =
+        prof?.break_start_time != null && prof?.break_end_time != null
+          ? {
+              startTime: formatHour(String(prof.break_start_time)),
+              endTime: formatHour(String(prof.break_end_time)),
+            }
+          : null;
+
       const slots = generateRescheduleSlots({
         rescheduleDate,
         durationMinutes: getDurationMinutes(
           reschedulingAppointment.start_time,
-          reschedulingAppointment.end_time
+          reschedulingAppointment.end_time,
         ),
         availabilityRows: (availabilityRes.data ?? []) as AvailabilityRow[],
         blockedRows: (blockedRes.data ?? []) as Array<{ start_at: string; end_at: string }>,
         bookedRows: (bookedRes.data ?? []) as Array<{ start_time: string; end_time: string }>,
         excludeAppointmentId: reschedulingId,
+        dailyBreak,
       });
 
       setRescheduleSlotOptions(slots);
@@ -128,10 +160,9 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
     setErrorMessage("");
     setUpdatingId(appointment.id);
 
-    // Optimistic update
     mutate(
       appointments.map((a) => (a.id === appointment.id ? { ...a, status } : a)),
-      false
+      false,
     );
 
     const { error } = await supabase
@@ -141,7 +172,7 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
       .eq("professional_id", professionalId);
 
     if (error) {
-      mutate(); // reverte
+      mutate();
       setErrorMessage(error.message);
       setUpdatingId(null);
       return;
@@ -149,17 +180,22 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
 
     globalMutate(dashboardKey(professionalId));
     showSuccess(
-      status === "confirmado" ? "Confirmado! Use o WhatsApp para avisar." : "Status atualizado."
+      status === "confirmado" ? "Confirmado. Avise a cliente pelo WhatsApp se quiser." : "Situação atualizada.",
     );
     setUpdatingId(null);
   };
 
   const handleOpenWhatsapp = async (appointment: AppointmentRow) => {
     const url = buildWhatsappUrlForAppointment(appointment);
-    if (!url) { setErrorMessage("Telefone inválido para WhatsApp."); return; }
-    const canOpen = await Linking.canOpenURL(url);
-    if (!canOpen) { setErrorMessage("Não foi possível abrir o WhatsApp."); return; }
-    await Linking.openURL(url);
+    if (!url) {
+      setErrorMessage("Telefone inválido para WhatsApp.");
+      return;
+    }
+    try {
+      await Linking.openURL(url);
+    } catch {
+      setErrorMessage("Não foi possível abrir o WhatsApp.");
+    }
   };
 
   const handleDateChange = (event: DateTimePickerEvent, pickedDate?: Date) => {
@@ -196,7 +232,11 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
     setErrorMessage("");
 
     const slot = rescheduleSlotOptions.find((s) => s.startTime === rescheduleStartTime);
-    if (!slot) { setErrorMessage("Selecione um horário disponível."); setSavingReschedule(false); return; }
+    if (!slot) {
+      setErrorMessage("Selecione um horário disponível.");
+      setSavingReschedule(false);
+      return;
+    }
 
     const { error } = await supabase
       .from("appointments")
@@ -208,127 +248,191 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
       .eq("id", appointment.id)
       .eq("professional_id", professionalId);
 
-    if (error) { setErrorMessage(error.message); setSavingReschedule(false); return; }
+    if (error) {
+      setErrorMessage(error.message);
+      setSavingReschedule(false);
+      return;
+    }
 
     handleCancelReschedule();
     setSavingReschedule(false);
-    mutate(); // revalida a lista
-    showSuccess("Reagendado com sucesso.");
+    mutate();
+    showSuccess("Horário alterado.");
   };
 
   return (
     <View style={styles.sectionContainer}>
-      <AnimatedSection delay={70} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Agenda por dia</Text>
-        <Pressable
-          onPress={() => setShowDatePicker(true)}
-          style={[styles.datePickerButton, { backgroundColor: theme.accentSoft, borderColor: theme.border }]}
-        >
-          <Text style={[styles.datePickerButtonLabel, { color: theme.textSecondary }]}>Data</Text>
-          <Text style={[styles.datePickerButtonValue, { color: theme.textPrimary }]}>
-            {formatDateBr(selectedDate)}
-          </Text>
-        </Pressable>
+      <AnimatedSection delay={60} style={[styles.agendaHeaderCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.agendaDateCaption, { color: theme.textSecondary }]}>AGENDA</Text>
+
+        <View style={styles.agendaNavRow}>
+          <Pressable
+            accessibilityLabel="Dia anterior"
+            onPress={() => setSelectedDate((d) => addDaysToIsoDate(d, -1))}
+            style={[styles.agendaNavHit, { borderColor: theme.border, backgroundColor: theme.background }]}
+          >
+            <Text style={[styles.agendaNavChevron, { color: theme.textPrimary }]}>‹</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setShowDatePicker(true)}
+            style={[styles.agendaDateCenter, { backgroundColor: theme.accentSoft }]}
+          >
+            <Text style={[styles.agendaDateTitle, { color: theme.textPrimary }]}>{dayHeading(selectedDate)}</Text>
+            <Text style={[styles.agendaDateSub, { color: theme.textSecondary }]}>
+              {formatDateBr(selectedDate)}
+              {!isToday ? " · toque para escolher a data" : ""}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            accessibilityLabel="Próximo dia"
+            onPress={() => setSelectedDate((d) => addDaysToIsoDate(d, 1))}
+            style={[styles.agendaNavHit, { borderColor: theme.border, backgroundColor: theme.background }]}
+          >
+            <Text style={[styles.agendaNavChevron, { color: theme.textPrimary }]}>›</Text>
+          </Pressable>
+        </View>
+
         {showDatePicker ? (
           <DateTimePicker
-            value={new Date(`${selectedDate}T00:00:00`)}
+            value={new Date(`${selectedDate}T12:00:00`)}
             mode="date"
             display="default"
             onChange={handleDateChange}
           />
         ) : null}
-        <View style={styles.actionRow}>
+
+        <View style={styles.agendaHeaderActions}>
           <Pressable
             onPress={() => setSelectedDate(toIsoDate())}
-            style={[styles.smallButton, { backgroundColor: theme.background, borderColor: theme.border }]}
+            style={[styles.agendaChipBtn, { borderColor: theme.border, backgroundColor: theme.background }]}
           >
-            <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Hoje</Text>
+            <Text style={[styles.agendaChipBtnText, { color: theme.textPrimary }]}>Ir para hoje</Text>
           </Pressable>
           <Pressable
             onPress={() => mutate()}
-            style={[styles.smallButton, { backgroundColor: theme.background, borderColor: theme.border }]}
+            style={[styles.agendaChipBtnGrow, { borderColor: theme.accent, backgroundColor: theme.accentSoft }]}
           >
-            <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Atualizar</Text>
+            <Text style={[styles.agendaChipBtnText, { color: theme.accent }]}>Atualizar lista</Text>
           </Pressable>
         </View>
+
         {errorMessage ? <Text style={styles.errorBanner}>{errorMessage}</Text> : null}
         {successMessage ? <Text style={styles.successBanner}>{successMessage}</Text> : null}
       </AnimatedSection>
 
-      <AnimatedSection delay={130} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-        <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>
-          Lista do dia ({appointments.length})
+      <AnimatedSection delay={110}>
+        <Text style={[styles.agendaListHeading, { color: theme.textSecondary }]}>
+          {isToday ? "Seus horários de hoje" : "Horários deste dia"}
+          {!isLoading ? ` · ${appointments.length}` : ""}
         </Text>
 
         {isLoading ? (
           <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>Carregando...</Text>
         ) : appointments.length === 0 ? (
-          <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
-            Nenhum agendamento para esta data.
-          </Text>
+          <View style={[styles.agendaAppointmentCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
+              Nenhum cliente neste dia. Use as setas ou o calendário para ver outros dias.
+            </Text>
+          </View>
         ) : (
           appointments.map((appointment) => (
-            <View key={appointment.id} style={[styles.listCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
-              <Text style={[styles.appointmentTitle, { color: theme.textPrimary }]}>
-                {formatHour(appointment.start_time)} — {formatHour(appointment.end_time)} •{" "}
-                {appointment.service?.name ?? "Serviço"}
-              </Text>
-              <Text style={[styles.appointmentCustomer, { color: theme.textPrimary }]}>
-                {appointment.customer_name}
-              </Text>
-              <Text style={[styles.appointmentMeta, { color: theme.textSecondary }]}>
-                {appointment.customer_phone}
-              </Text>
+            <View
+              key={appointment.id}
+              style={[styles.agendaAppointmentCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+            >
+              <View style={styles.agendaAppointmentMainRow}>
+                <View style={styles.agendaTimeColumn}>
+                  <Text style={[styles.agendaTimeStart, { color: theme.accent }]}>{formatHour(appointment.start_time)}</Text>
+                  <Text style={[styles.agendaTimeEnd, { color: theme.textSecondary }]}>
+                    até {formatHour(appointment.end_time)}
+                  </Text>
+                </View>
+
+                <View style={styles.agendaClientBlock}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
+                    <Text style={[styles.agendaClientName, { color: theme.textPrimary }]} numberOfLines={2}>
+                      {appointment.customer_name}
+                    </Text>
+                    <View style={[styles.agendaStatusBadge, { backgroundColor: theme.accentSoft }]}>
+                      <Text style={[styles.agendaStatusBadgeText, { color: theme.accent }]}>
+                        {statusLabel(appointment.status)}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={[styles.agendaServiceLine, { color: theme.textSecondary }]} numberOfLines={2}>
+                    {appointment.service?.name ?? "Serviço"}
+                  </Text>
+                  <Text style={[styles.agendaPhoneLine, { color: theme.textSecondary }]} selectable>
+                    {appointment.customer_phone}
+                  </Text>
+                </View>
+              </View>
+
               {appointment.notes ? (
-                <Text style={[styles.appointmentMeta, { color: theme.textSecondary }]}>
-                  Obs: {appointment.notes}
+                <Text style={[styles.agendaNotesLine, { color: theme.textSecondary }]} numberOfLines={3}>
+                  Obs.: {appointment.notes}
                 </Text>
               ) : null}
 
-              <View style={styles.actionRow}>
+              <View style={styles.agendaPrimaryRow}>
                 <Pressable
-                  style={[styles.smallButton, { backgroundColor: theme.card, borderColor: theme.border }]}
-                  onPress={() => handleStartReschedule(appointment)}
-                >
-                  <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>Reagendar</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.smallButton, { backgroundColor: theme.card, borderColor: theme.border }]}
+                  style={[styles.agendaPrimaryBtn, { backgroundColor: "#22c55e" }]}
                   onPress={() => handleOpenWhatsapp(appointment)}
                 >
-                  <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>WhatsApp</Text>
+                  <Text style={[styles.agendaPrimaryBtnText, { color: "#ffffff" }]}>WhatsApp</Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.agendaPrimaryBtn,
+                    styles.agendaPrimaryBtnOutline,
+                    { borderColor: theme.border, backgroundColor: theme.background },
+                  ]}
+                  onPress={() =>
+                    reschedulingId === appointment.id ? handleCancelReschedule() : handleStartReschedule(appointment)
+                  }
+                >
+                  <Text style={[styles.agendaPrimaryBtnText, { color: theme.textPrimary }]}>
+                    {reschedulingId === appointment.id ? "Fechar" : "Mudar horário"}
+                  </Text>
                 </Pressable>
               </View>
 
               {reschedulingId === appointment.id ? (
-                <View style={[styles.rescheduleCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                  <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Novo horário</Text>
+                <View style={[styles.rescheduleCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
+                  <Text style={[styles.agendaSectionLabel, { color: theme.textSecondary }]}>Nova data</Text>
                   <Pressable
-                    style={[styles.smallButton, { backgroundColor: theme.background, borderColor: theme.border }]}
+                    style={[styles.agendaChipBtnGrow, { borderColor: theme.border, backgroundColor: theme.card }]}
                     onPress={() => setShowRescheduleDatePicker(true)}
                   >
-                    <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>
-                      Data: {formatDateBr(rescheduleDate)}
+                    <Text style={[styles.agendaChipBtnText, { color: theme.textSecondary }]}>
+                      {formatDateBr(rescheduleDate)}
                     </Text>
                   </Pressable>
                   {showRescheduleDatePicker ? (
                     <DateTimePicker
-                      value={new Date(`${rescheduleDate}T00:00:00`)}
+                      value={new Date(`${rescheduleDate}T12:00:00`)}
                       mode="date"
                       display="default"
                       onChange={handleRescheduleDateChange}
                     />
                   ) : null}
+
+                  <Text style={[styles.agendaSectionLabel, { color: theme.textSecondary }]}>Horários livres</Text>
                   {loadingRescheduleSlots ? (
-                    <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
-                      Carregando horários...
-                    </Text>
+                    <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>Carregando...</Text>
                   ) : rescheduleSlotOptions.length === 0 ? (
                     <Text style={[styles.placeholderText, { color: theme.textSecondary }]}>
-                      Nenhum horário disponível.
+                      Nenhum horário livre neste dia — troque a data ou a disponibilidade na web.
                     </Text>
                   ) : (
-                    <View style={styles.statusRow}>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.rescheduleSlotsScroll}
+                      contentContainerStyle={styles.rescheduleSlotsScrollContent}
+                    >
                       {rescheduleSlotOptions.map((slot) => {
                         const selected = rescheduleStartTime === slot.startTime;
                         return (
@@ -336,45 +440,48 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
                             key={`${slot.startTime}-${slot.endTime}`}
                             onPress={() => setRescheduleStartTime(slot.startTime)}
                             style={[
-                              styles.statusButton,
-                              { backgroundColor: theme.background, borderColor: theme.border },
-                              selected && styles.statusButtonSelected,
-                              selected && { backgroundColor: theme.buttonPrimary, borderColor: theme.buttonPrimary },
+                              styles.smallButton,
+                              {
+                                borderColor: selected ? theme.buttonPrimary : theme.border,
+                                backgroundColor: selected ? theme.buttonPrimary : theme.card,
+                                paddingHorizontal: 14,
+                                paddingVertical: 11,
+                              },
                             ]}
                           >
-                            <Text style={[
-                              styles.statusButtonText,
-                              { color: selected ? theme.buttonPrimaryText : theme.textSecondary },
-                            ]}>
-                              {slot.startTime} — {slot.endTime}
+                            <Text
+                              style={[
+                                styles.smallButtonText,
+                                { color: selected ? theme.buttonPrimaryText : theme.textSecondary },
+                              ]}
+                            >
+                              {slot.startTime}
                             </Text>
                           </Pressable>
                         );
                       })}
-                    </View>
+                    </ScrollView>
                   )}
-                  <View style={styles.actionRow}>
+                  <View style={[styles.actionRow, { marginTop: 10 }]}>
                     <Pressable
                       style={[
-                        styles.smallButton,
-                        { backgroundColor: theme.background, borderColor: theme.border },
+                        styles.agendaPrimaryBtn,
+                        { flex: 1, backgroundColor: theme.buttonPrimary },
                         (savingReschedule || loadingRescheduleSlots) && styles.buttonDisabled,
                       ]}
                       onPress={() => handleSaveReschedule(appointment)}
                       disabled={savingReschedule || loadingRescheduleSlots || rescheduleSlotOptions.length === 0}
                     >
-                      <Text style={[styles.smallButtonText, { color: theme.textSecondary }]}>
-                        {savingReschedule ? "Salvando..." : "Salvar"}
+                      <Text style={[styles.agendaPrimaryBtnText, { color: theme.buttonPrimaryText }]}>
+                        {savingReschedule ? "Salvando..." : "Salvar novo horário"}
                       </Text>
-                    </Pressable>
-                    <Pressable style={styles.smallDangerButton} onPress={handleCancelReschedule} disabled={savingReschedule}>
-                      <Text style={styles.smallDangerButtonText}>Cancelar</Text>
                     </Pressable>
                   </View>
                 </View>
               ) : null}
 
-              <View style={styles.statusRow}>
+              <Text style={[styles.agendaSectionLabel, { color: theme.textSecondary }]}>Situação do agendamento</Text>
+              <View style={styles.agendaStatusGrid}>
                 {statusOptions.map((option) => {
                   const selected = appointment.status === option.value;
                   return (
@@ -383,18 +490,22 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
                       disabled={updatingId === appointment.id}
                       onPress={() => handleChangeStatus(appointment, option.value)}
                       style={[
-                        styles.statusButton,
-                        { backgroundColor: theme.background, borderColor: theme.border },
-                        selected && styles.statusButtonSelected,
-                        selected && { backgroundColor: theme.buttonPrimary, borderColor: theme.buttonPrimary },
+                        styles.agendaStatusGridBtn,
+                        { borderColor: theme.border, backgroundColor: theme.background },
+                        selected && {
+                          backgroundColor: theme.buttonPrimary,
+                          borderColor: theme.buttonPrimary,
+                        },
                         updatingId === appointment.id && styles.buttonDisabled,
                       ]}
                     >
-                      <Text style={[
-                        styles.statusButtonText,
-                        { color: selected ? theme.buttonPrimaryText : theme.textSecondary },
-                        selected && styles.statusButtonTextSelected,
-                      ]}>
+                      <Text
+                        style={[
+                          styles.agendaPrimaryBtnText,
+                          { fontSize: 13 },
+                          { color: selected ? theme.buttonPrimaryText : theme.textSecondary },
+                        ]}
+                      >
                         {option.label}
                       </Text>
                     </Pressable>

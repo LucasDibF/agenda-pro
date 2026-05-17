@@ -1,11 +1,10 @@
 // ─── Shell da área autenticada: tabs, tema, notificações, Realtime ───────────
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   AppState,
-  Easing,
   Platform,
   Pressable,
   ScrollView,
@@ -20,7 +19,12 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabase";
 import type { AppTab, ThemeMode } from "../types";
 import { APP_THEMES, APP_VERSION, tabs } from "../constants/theme";
-import { ensureProfessionalProfile } from "../utils";
+import {
+  ensureProfessionalProfile,
+  fetchBookingPublicSegment,
+  friendlySupabaseMessage,
+  normalizeBookingPublicSlug,
+} from "../utils";
 import { styles } from "../styles";
 import { AnimatedBackground } from "../components/AnimatedBackground";
 import { useRealtimeAppointments } from "../hooks/useRealtime";
@@ -53,7 +57,9 @@ function ProfessionalAreaContent({ session }: ProfessionalAreaProps) {
   const [activeTab, setActiveTab] = useState<AppTab>("dashboard");
   const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const [dashboardRefreshSignal, setDashboardRefreshSignal] = useState(0);
-  const [bookingPublicSlug, setBookingPublicSlug] = useState(session.user.id);
+  const [bookingPublicSlug, setBookingPublicSlug] = useState(() =>
+    normalizeBookingPublicSlug(session.user.id),
+  );
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState("");
   const tabTransition = useRef(new Animated.Value(1)).current;
@@ -65,29 +71,24 @@ function ProfessionalAreaContent({ session }: ProfessionalAreaProps) {
   // Realtime ativo durante toda a sessão
   useRealtimeAppointments(session.user.id);
 
-  useEffect(() => {
-    const prepareProfile = async () => {
-      setProfileLoading(true);
-      setProfileError("");
-      setBookingPublicSlug(session.user.id);
-      const error = await ensureProfessionalProfile(session.user);
-      if (error) {
-        setProfileError(error.message);
-        setProfileLoading(false);
-        return;
-      }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("booking_code")
-        .eq("id", session.user.id)
-        .maybeSingle();
-      const code = profile?.booking_code?.trim();
-      setBookingPublicSlug(code && code.length > 0 ? code : session.user.id);
+  const prepareProfile = useCallback(async () => {
+    setProfileLoading(true);
+    setProfileError("");
+    setBookingPublicSlug(normalizeBookingPublicSlug(session.user.id));
+    const error = await ensureProfessionalProfile(session.user);
+    if (error) {
+      setProfileError(friendlySupabaseMessage(error.message));
       setProfileLoading(false);
-    };
-
-    prepareProfile();
+      return;
+    }
+    const segment = await fetchBookingPublicSegment(supabase, session.user.id);
+    setBookingPublicSlug(normalizeBookingPublicSlug(segment));
+    setProfileLoading(false);
   }, [session.user]);
+
+  useEffect(() => {
+    void prepareProfile();
+  }, [prepareProfile]);
 
   useEffect(() => {
     const setupNotifications = async () => {
@@ -134,10 +135,11 @@ function ProfessionalAreaContent({ session }: ProfessionalAreaProps) {
 
   useEffect(() => {
     tabTransition.setValue(0);
-    const animation = Animated.timing(tabTransition, {
+    const animation = Animated.spring(tabTransition, {
       toValue: 1,
-      duration: 280,
-      easing: Easing.out(Easing.cubic),
+      stiffness: 420,
+      damping: 32,
+      mass: 0.85,
       useNativeDriver: true,
     });
     animation.start();
@@ -188,7 +190,15 @@ function ProfessionalAreaContent({ session }: ProfessionalAreaProps) {
           <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Preparando sua área...</Text>
         </View>
       ) : profileError ? (
-        <Text style={styles.errorBanner}>{profileError}</Text>
+        <View style={[styles.loadingListContainer, { paddingHorizontal: 20 }]}>
+          <Text style={styles.errorBanner}>{profileError}</Text>
+          <Pressable
+            onPress={() => void prepareProfile()}
+            style={[styles.button, { marginTop: 16, backgroundColor: theme.buttonPrimary }]}
+          >
+            <Text style={[styles.buttonText, { color: theme.buttonPrimaryText }]}>Tentar novamente</Text>
+          </Pressable>
+        </View>
       ) : (
         <View style={styles.mainContent}>
           {/* ── Tabs ────────────────────────────────────────────────────── */}
@@ -234,8 +244,8 @@ function ProfessionalAreaContent({ session }: ProfessionalAreaProps) {
           <Animated.View
             style={[
               styles.contentScroll,
+              { backgroundColor: theme.background },
               {
-                opacity: tabTransition,
                 transform: [{
                   translateY: tabTransition.interpolate({
                     inputRange: [0, 1],

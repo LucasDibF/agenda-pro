@@ -1,5 +1,9 @@
 // ─── Utilitários do app mobile ────────────────────────────────────────────────
 
+export { normalizeBookingPublicSlug } from "./booking-link";
+export { fetchBookingPublicSegment } from "./profile-booking";
+export { friendlySupabaseMessage } from "./supabase-errors";
+
 import type { User } from "@supabase/supabase-js";
 import type { AppointmentRow, AvailabilityRow, SlotOption } from "../types";
 import { supabase } from "../lib/supabase";
@@ -13,6 +17,13 @@ export const toIsoDate = (date = new Date()): string => {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+
+/** "YYYY-MM-DD" deslocado em ±n dias (meio-dia local reduz bugs de fuso). */
+export function addDaysToIsoDate(isoDate: string, deltaDays: number): string {
+  const d = new Date(`${isoDate}T12:00:00`);
+  d.setDate(d.getDate() + deltaDays);
+  return toIsoDate(d);
+}
 
 /** "YYYY-MM-DD" → "DD/MM/YYYY" */
 export const formatDateBr = (dateInput: string): string => {
@@ -85,8 +96,11 @@ export function generateRescheduleSlots(params: {
   blockedRows: Array<{ start_at: string; end_at: string }>;
   bookedRows: Array<{ start_time: string; end_time: string }>;
   excludeAppointmentId: string;
+  /** Intervalo diário (ex.: almoço): não gera slots que intersectem esse período. */
+  dailyBreak?: { startTime: string; endTime: string } | null;
 }): SlotOption[] {
-  const { rescheduleDate, durationMinutes, availabilityRows, blockedRows, bookedRows } = params;
+  const { rescheduleDate, durationMinutes, availabilityRows, blockedRows, bookedRows, dailyBreak } =
+    params;
   const now = new Date();
   const isToday = rescheduleDate === toIsoDate();
   const slots: SlotOption[] = [];
@@ -117,8 +131,17 @@ export function generateRescheduleSlots(params: {
           combineDateAndTime(rescheduleDate, booked.end_time)
         )
       );
+      const overlapsDailyBreak =
+        dailyBreak?.startTime &&
+        dailyBreak?.endTime &&
+        hasOverlap(
+          slotStart,
+          slotEnd,
+          combineDateAndTime(rescheduleDate, dailyBreak.startTime),
+          combineDateAndTime(rescheduleDate, dailyBreak.endTime),
+        );
 
-      if (!overlapsBlocked && !overlapsBooked) {
+      if (!overlapsBlocked && !overlapsBooked && !overlapsDailyBreak) {
         slots.push({
           startTime: normalizeTime(slotStart.toTimeString()),
           endTime: normalizeTime(slotEnd.toTimeString()),

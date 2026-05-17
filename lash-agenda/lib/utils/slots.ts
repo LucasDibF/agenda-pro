@@ -18,12 +18,31 @@ export const combineDateAndTime = (dateInput: string, timeInput: string): Date =
 export const hasOverlap = (aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean =>
   aStart < bEnd && bStart < aEnd;
 
+/** Janela de intervalo diário (almoco/pausa); aplicada em todos os dias com disponibilidade. */
+export type DailyBreakWindow = {
+  startTime: string;
+  endTime: string;
+};
+
+function overlapsDailyBreak(
+  selectedDate: string,
+  slotStart: Date,
+  slotEnd: Date,
+  dailyBreak: DailyBreakWindow | null | undefined,
+): boolean {
+  if (!dailyBreak?.startTime || !dailyBreak?.endTime) return false;
+  const bStart = combineDateAndTime(selectedDate, dailyBreak.startTime);
+  const bEnd = combineDateAndTime(selectedDate, dailyBreak.endTime);
+  return hasOverlap(slotStart, slotEnd, bStart, bEnd);
+}
+
 type GenerateSlotsParams = {
   selectedDate: string;
   serviceDurationMinutes: number;
   availabilityRows: AvailabilityRow[];
   blockedRows: BlockedTimeRow[];
   bookedSlots: BookedSlotRow[];
+  dailyBreak?: DailyBreakWindow | null;
 };
 
 /**
@@ -37,6 +56,7 @@ export function generateSlots({
   availabilityRows,
   blockedRows,
   bookedSlots,
+  dailyBreak,
 }: GenerateSlotsParams): SlotOption[] {
   const weekday = new Date(`${selectedDate}T00:00:00`).getDay();
   const dayAvailability = availabilityRows.filter((row) => row.weekday === weekday);
@@ -76,7 +96,9 @@ export function generateSlots({
         )
       );
 
-      if (!overlapsBlocked && !overlapsBooked) {
+      const overlapsBreak = overlapsDailyBreak(selectedDate, slotStart, slotEnd, dailyBreak);
+
+      if (!overlapsBlocked && !overlapsBooked && !overlapsBreak) {
         slots.push({
           startTime: normalizeTime(slotStart.toTimeString()),
           endTime: normalizeTime(slotEnd.toTimeString()),

@@ -11,8 +11,30 @@ import type {
 } from "@/types/domain";
 import { toLocalDateInput, formatDateBr } from "@/lib/utils/date";
 import { formatCurrencyBRL } from "@/lib/utils/format";
-import { generateSlots, normalizeTime } from "@/lib/utils/slots";
+import { generateSlots, normalizeTime, type DailyBreakWindow } from "@/lib/utils/slots";
 import { BookingCalendar } from "@/components/public/booking-calendar";
+
+/** Alinhado ao `resolve_professional_id` no Postgres (variante típica). */
+const IDENTIFIER_UUID_STRICT =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Se o RPC falhar (rede/cache), aceita formato UUID RFC comum. */
+const IDENTIFIER_UUID_LOOSE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function decodeRouteIdentifier(raw: string): string {
+  const t = raw.trim();
+  if (!t.includes("%")) return t;
+  try {
+    return decodeURIComponent(t);
+  } catch {
+    return t;
+  }
+}
+
+function looksLikeUuidForBooking(trimmed: string): boolean {
+  return IDENTIFIER_UUID_STRICT.test(trimmed) || IDENTIFIER_UUID_LOOSE.test(trimmed);
+}
 
 // ─── Estado do formulário do cliente ─────────────────────────────────────────
 
@@ -35,6 +57,17 @@ function slotOptionToBookedSlotRow(slot: SlotOption): BookedSlotRow {
   };
 }
 
+function parseDailyBreakRpc(payload: unknown): DailyBreakWindow | null {
+  if (payload == null || typeof payload !== "object") return null;
+  const o = payload as Record<string, unknown>;
+  const s = o.break_start_time;
+  const e = o.break_end_time;
+  if (s == null || e == null) return null;
+  const st = typeof s === "string" ? s : String(s);
+  const et = typeof e === "string" ? e : String(e);
+  return { startTime: normalizeTime(st), endTime: normalizeTime(et) };
+}
+
 type BookingFlowProps = {
   professionalIdentifier: string;
 };
@@ -45,6 +78,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
   const [availabilityRows, setAvailabilityRows] = useState<AvailabilityRow[]>([]);
   const [blockedRows, setBlockedRows] = useState<BlockedTimeRow[]>([]);
   const [bookedSlots, setBookedSlots] = useState<BookedSlotRow[]>([]);
+  const [dailyBreak, setDailyBreak] = useState<DailyBreakWindow | null>(null);
 
   const [selectedServiceId, setSelectedServiceId] = useState("");
   const [selectedDate, setSelectedDate] = useState(toLocalDateInput(new Date()));
@@ -80,7 +114,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
       setLoading(true);
       setErrorMessage("");
 
-      const trimmed = professionalIdentifier.trim();
+      const trimmed = decodeRouteIdentifier(professionalIdentifier);
       if (!trimmed) {
         setErrorMessage("Codigo da profissional invalido.");
         setLoading(false);
@@ -92,9 +126,7 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
       });
 
       if (error) {
-        const isUuid =
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(trimmed);
-        if (isUuid) {
+        if (looksLikeUuidForBooking(trimmed)) {
           setProfessionalId(trimmed);
           return;
         }
@@ -104,6 +136,10 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
       }
 
       if (!data) {
+        if (looksLikeUuidForBooking(trimmed)) {
+          setProfessionalId(trimmed);
+          return;
+        }
         setErrorMessage("Codigo da profissional nao encontrado.");
         setLoading(false);
         return;
@@ -115,43 +151,79 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
     resolveProfessional();
   }, [professionalIdentifier]);
 
+  useEffect(() => {
+    if (!professionalId) {
+      setDailyBreak(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { data, error } = await supabase.rpc("get_professional_daily_break", {
+        p_professional_id: professionalId,
+      });
+      if (cancelled) return;
+      if (error) {
+        setDailyBreak(null);
+        return;
+      }
+      setDailyBreak(parseDailyBreakRpc(data));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [professionalId]);
+
   // ── 2) Carrega serviços e disponibilidade ─────────────────────────────────
 
   useEffect(() => {
     if (!professionalId) return;
 
+    let cancelled = false;
+
     const loadInitialData = async () => {
       setLoading(true);
       setErrorMessage("");
+      try {
+        const [servicesRes, availabilityRes] = await Promise.all([
+          supabase
+            .from("services")
+            .select("id, name, duration_minutes, price, description, is_active, created_at")
+            .eq("professional_id", professionalId)
+            .eq("is_active", true)
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("availability")
+            .select("id, weekday, start_time, end_time, slot_interval_minutes, is_active")
+            .eq("professional_id", professionalId)
+            .eq("is_active", true)
+            .order("weekday", { ascending: true })
+            .order("start_time", { ascending: true }),
+        ]);
 
-      const [servicesRes, availabilityRes] = await Promise.all([
-        supabase
-          .from("services")
-          .select("id, name, duration_minutes, price, description, is_active, created_at")
-          .eq("professional_id", professionalId)
-          .eq("is_active", true)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("availability")
-          .select("id, weekday, start_time, end_time, slot_interval_minutes, is_active")
-          .eq("professional_id", professionalId)
-          .eq("is_active", true)
-          .order("weekday", { ascending: true })
-          .order("start_time", { ascending: true }),
-      ]);
+        if (cancelled) return;
 
-      if (servicesRes.error) { setErrorMessage(servicesRes.error.message); setLoading(false); return; }
-      if (availabilityRes.error) { setErrorMessage(availabilityRes.error.message); setLoading(false); return; }
+        if (servicesRes.error) {
+          setErrorMessage(servicesRes.error.message);
+          return;
+        }
+        if (availabilityRes.error) {
+          setErrorMessage(availabilityRes.error.message);
+          return;
+        }
 
-      const fetchedServices = (servicesRes.data ?? []) as ServiceRow[];
-      setServices(fetchedServices);
-      setAvailabilityRows((availabilityRes.data ?? []) as AvailabilityRow[]);
-      if (fetchedServices.length > 0) setSelectedServiceId(fetchedServices[0].id);
-
-      setLoading(false);
+        const fetchedServices = (servicesRes.data ?? []) as ServiceRow[];
+        setServices(fetchedServices);
+        setAvailabilityRows((availabilityRes.data ?? []) as AvailabilityRow[]);
+        if (fetchedServices.length > 0) setSelectedServiceId(fetchedServices[0].id);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
 
-    loadInitialData();
+    void loadInitialData();
+    return () => {
+      cancelled = true;
+    };
   }, [professionalId]);
 
   // ── 3) Atualiza bloqueios e slots ao mudar data ───────────────────────────
@@ -198,8 +270,9 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
       availabilityRows,
       blockedRows,
       bookedSlots,
+      dailyBreak,
     });
-  }, [availabilityRows, blockedRows, bookedSlots, selectedDate, selectedService]);
+  }, [availabilityRows, blockedRows, bookedSlots, dailyBreak, selectedDate, selectedService]);
 
   // Verifica se todos os campos para confirmar estão preenchidos
   const isReadyToConfirm =
@@ -320,8 +393,9 @@ export function BookingFlow({ professionalIdentifier }: BookingFlowProps) {
 
   if (loading) {
     return (
-      <div className="elevated-card p-6">
+      <div className="elevated-card space-y-3 p-6">
         <p className="text-body-secondary text-sm">Carregando disponibilidade...</p>
+        {errorMessage ? <p className="callout-danger text-sm">{errorMessage}</p> : null}
       </div>
     );
   }
