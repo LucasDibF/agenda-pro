@@ -53,6 +53,8 @@ Crie `.env.local` na raiz deste projeto (`agenda-online` no `package.json`; past
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxxxxxxxxxxxxxxxx
+# Opcional: URL pública copiável no cartão «Link público». Se omitido, desenvolvimento usa o host atual e produção cai em https://lash-agenda-plum.vercel.app (enquanto o domínio `lash-agenda.vercel.app` não apontar para este projeto na Vercel).
+NEXT_PUBLIC_BOOKING_APP_URL=https://lash-agenda-plum.vercel.app
 ```
 
 ## Rodar localmente
@@ -91,6 +93,7 @@ Configuração recomendada:
 - Variáveis em Production/Preview:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - Opcional: `NEXT_PUBLIC_BOOKING_APP_URL` — mesmo host em que `/booking` responde 200 (links copiados do painel; hoje uso típico: `https://lash-agenda-plum.vercel.app` até ligar corretamente `lash-agenda.vercel.app` a este projeto nas configurações de domínio da Vercel)
 
 ## Documentação complementar
 

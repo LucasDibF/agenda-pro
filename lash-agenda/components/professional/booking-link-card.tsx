@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+import { publicBookingUrl } from "@/lib/public-booking-site";
 
 export function BookingLinkCard() {
   const [bookingLink, setBookingLink] = useState("");
@@ -26,7 +27,7 @@ export function BookingLinkCard() {
       setBookingCode(code);
 
       if (typeof window !== "undefined") {
-        setBookingLink(`${window.location.origin}/booking/${code}`);
+        setBookingLink(publicBookingUrl(code, window.location.origin));
       }
     };
 

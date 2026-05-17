@@ -9,9 +9,8 @@ export const APP_VERSION = "1.0.3";
 // ─── URL base do web app (para links de booking) ─────────────────────────────
 // Produção canônica: env pode apontar para preview antigo; normalizamos host legado.
 
-// Produção pública válida atual (alias gerado pela Vercel para o projeto correto).
-// `lash-agenda.vercel.app` está associado a outro deploy minúsculo (home ~800 bytes, /booking 404).
-// Ajuste no painel da Vercel: Domínios → apontar o domínio desejado para este projeto/fase Production.
+// Fallback alinhado com `lash-agenda/lib/public-booking-site.ts` (PUBLIC_BOOKING_APP_FALLBACK).
+// Produção válida onde /booking responde (alias Vercel atual).
 const CANONICAL_WEB_APP_URL = "https://lash-agenda-plum.vercel.app";
 
 const LEGACY_WEB_HOSTS = new Set([
