@@ -4,14 +4,20 @@ import type { AppTab, AppointmentStatus, ParticleDepth, ThemeMode, ThemeTokens }
 
 // ─── Versão do app ────────────────────────────────────────────────────────────
 
-export const APP_VERSION = "1.0.2";
+export const APP_VERSION = "1.0.3";
 
 // ─── URL base do web app (para links de booking) ─────────────────────────────
 // Produção canônica: env pode apontar para preview antigo; normalizamos host legado.
 
-const CANONICAL_WEB_APP_URL = "https://lash-agenda.vercel.app";
+// Produção pública válida atual (alias gerado pela Vercel para o projeto correto).
+// `lash-agenda.vercel.app` está associado a outro deploy minúsculo (home ~800 bytes, /booking 404).
+// Ajuste no painel da Vercel: Domínios → apontar o domínio desejado para este projeto/fase Production.
+const CANONICAL_WEB_APP_URL = "https://lash-agenda-plum.vercel.app";
 
-const LEGACY_WEB_HOSTS = new Set(["lash-agenda-k66ipli1j-lucas-freitas-dibs-projects.vercel.app"]);
+const LEGACY_WEB_HOSTS = new Set([
+  "lash-agenda-k66ipli1j-lucas-freitas-dibs-projects.vercel.app",
+  "lash-agenda.vercel.app",
+]);
 
 function resolveWebAppBaseUrl(): string {
   const fromEnv = process.env.EXPO_PUBLIC_WEB_APP_URL?.trim();

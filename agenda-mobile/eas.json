@@ -7,19 +7,19 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_WEB_APP_URL": "https://lash-agenda.vercel.app"
+        "EXPO_PUBLIC_WEB_APP_URL": "https://lash-agenda-plum.vercel.app"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_WEB_APP_URL": "https://lash-agenda.vercel.app"
+        "EXPO_PUBLIC_WEB_APP_URL": "https://lash-agenda-plum.vercel.app"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_WEB_APP_URL": "https://lash-agenda.vercel.app"
+        "EXPO_PUBLIC_WEB_APP_URL": "https://lash-agenda-plum.vercel.app"
       }
     }
   },
