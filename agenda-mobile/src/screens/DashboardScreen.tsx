@@ -12,6 +12,8 @@ import { useDashboard } from "../hooks/useDashboard";
 
 type DashboardScreenProps = {
   professionalId: string;
+  /** Slug público igual à web (`booking_code` ou UUID). */
+  bookingPublicSlug: string;
   onOpenAgenda: () => void;
   theme: ThemeTokens;
   displayName: string;
@@ -20,6 +22,7 @@ type DashboardScreenProps = {
 
 export function DashboardScreen({
   professionalId,
+  bookingPublicSlug,
   onOpenAgenda,
   theme,
   displayName,
@@ -33,8 +36,8 @@ export function DashboardScreen({
     if (refreshSignal > 0) mutate();
   }, [refreshSignal]);
 
-  const bookingCode = professionalId;
-  const bookingLink = `${webAppBaseUrl}/booking/${bookingCode}`;
+  const bookingCode = bookingPublicSlug;
+  const bookingLink = `${webAppBaseUrl}/booking/${bookingPublicSlug}`;
 
   const firstAppointment = useMemo(
     () =>

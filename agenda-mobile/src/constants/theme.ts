@@ -4,15 +4,29 @@ import type { AppTab, AppointmentStatus, ParticleDepth, ThemeMode, ThemeTokens }
 
 // ─── Versão do app ────────────────────────────────────────────────────────────
 
-export const APP_VERSION = "1.0.1";
+export const APP_VERSION = "1.0.2";
 
 // ─── URL base do web app (para links de booking) ─────────────────────────────
-// Produção padrão: lash-agenda.vercel.app (override via EXPO_PUBLIC_WEB_APP_URL / EAS).
+// Produção canônica: env pode apontar para preview antigo; normalizamos host legado.
 
-const resolvedWebUrl =
-  process.env.EXPO_PUBLIC_WEB_APP_URL?.trim() || "https://lash-agenda.vercel.app";
+const CANONICAL_WEB_APP_URL = "https://lash-agenda.vercel.app";
 
-export const webAppBaseUrl = resolvedWebUrl.replace(/\/+$/, "");
+const LEGACY_WEB_HOSTS = new Set(["lash-agenda-k66ipli1j-lucas-freitas-dibs-projects.vercel.app"]);
+
+function resolveWebAppBaseUrl(): string {
+  const fromEnv = process.env.EXPO_PUBLIC_WEB_APP_URL?.trim();
+  const base = fromEnv?.length ? fromEnv : CANONICAL_WEB_APP_URL;
+  const withScheme = /^https?:\/\//i.test(base) ? base : `https://${base}`;
+  try {
+    const { hostname } = new URL(withScheme);
+    if (LEGACY_WEB_HOSTS.has(hostname)) return CANONICAL_WEB_APP_URL;
+    return withScheme.replace(/\/+$/, "");
+  } catch {
+    return CANONICAL_WEB_APP_URL;
+  }
+}
+
+export const webAppBaseUrl = resolveWebAppBaseUrl();
 
 // ─── Temas (dark / light) ────────────────────────────────────────────────────
 

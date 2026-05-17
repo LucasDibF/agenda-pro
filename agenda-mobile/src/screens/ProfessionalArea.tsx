@@ -53,6 +53,7 @@ function ProfessionalAreaContent({ session }: ProfessionalAreaProps) {
   const [activeTab, setActiveTab] = useState<AppTab>("dashboard");
   const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const [dashboardRefreshSignal, setDashboardRefreshSignal] = useState(0);
+  const [bookingPublicSlug, setBookingPublicSlug] = useState(session.user.id);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState("");
   const tabTransition = useRef(new Animated.Value(1)).current;
@@ -68,8 +69,20 @@ function ProfessionalAreaContent({ session }: ProfessionalAreaProps) {
     const prepareProfile = async () => {
       setProfileLoading(true);
       setProfileError("");
+      setBookingPublicSlug(session.user.id);
       const error = await ensureProfessionalProfile(session.user);
-      if (error) setProfileError(error.message);
+      if (error) {
+        setProfileError(error.message);
+        setProfileLoading(false);
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("booking_code")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      const code = profile?.booking_code?.trim();
+      setBookingPublicSlug(code && code.length > 0 ? code : session.user.id);
       setProfileLoading(false);
     };
 
@@ -241,6 +254,7 @@ function ProfessionalAreaContent({ session }: ProfessionalAreaProps) {
               {activeTab === "dashboard" ? (
                 <DashboardScreen
                   professionalId={session.user.id}
+                  bookingPublicSlug={bookingPublicSlug}
                   onOpenAgenda={() => setActiveTab("agenda")}
                   theme={theme}
                   displayName={userFirstName}
