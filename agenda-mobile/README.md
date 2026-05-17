@@ -1,6 +1,6 @@
-# Agenda Mobile (`agenda-mobile`)
+# Agenda Online — app para profissional
 
-Aplicativo mobile da área profissional, usando o mesmo backend Supabase da versão web.
+Aplicativo mobile da área da profissional (Expo); usa o mesmo backend Supabase da aplicação web.
 
 ## Stack
 

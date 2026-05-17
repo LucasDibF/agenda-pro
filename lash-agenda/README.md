@@ -1,4 +1,4 @@
-# Agenda SaaS Web (`lash-agenda`)
+# Agenda Online — aplicação web
 
 Aplicação web do SaaS de agendamento para profissionais.
 
@@ -48,7 +48,7 @@ Aplicação web do SaaS de agendamento para profissionais.
 
 ## Variáveis de ambiente
 
-Crie `lash-agenda/.env.local`:
+Crie `.env.local` na raiz deste projeto (`agenda-online` no `package.json`; pasta git costuma permanecer `lash-agenda`):
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
@@ -57,8 +57,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxxxxxxxxxxxxxxxx
 
 ## Rodar localmente
 
+Na raiz do monorepo Saas, entre nesta pasta (`lash-agenda`) e rode:
+
 ```bash
-cd "lash-agenda"
 npm install
 npm run dev
 ```
@@ -85,7 +86,7 @@ Esse arquivo já inclui:
 
 Configuração recomendada:
 
-- Root Directory: `lash-agenda`
+- Root Directory na Vercel: pasta deste app (normalmente `lash-agenda` no monorepo)
 - Build command: padrão Next.js
 - Variáveis em Production/Preview:
   - `NEXT_PUBLIC_SUPABASE_URL`

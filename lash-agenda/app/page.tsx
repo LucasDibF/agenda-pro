@@ -25,7 +25,7 @@ export default function HomePage() {
         <div className="hero-shell grid gap-10 lg:grid-cols-2">
           <div className="space-y-6">
             <span className="border-[var(--line)] bg-[var(--surface)] text-[var(--accent-dark)] inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold tracking-wide">
-              AGENDA • MVP
+              Agenda Online • MVP
             </span>
 
             <h1 className="title-display text-4xl font-bold sm:text-5xl">

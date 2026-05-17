@@ -26,7 +26,11 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Agenda Online",
+  title: {
+    default: "Agenda Online",
+    template: "%s · Agenda Online",
+  },
+  applicationName: "Agenda Online",
   description: "App de agendamento online para profissionais",
   icons: {
     icon: [
