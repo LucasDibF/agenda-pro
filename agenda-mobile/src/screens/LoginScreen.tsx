@@ -10,7 +10,11 @@ import { APP_VERSION } from "../constants/theme";
 import { friendlySupabaseMessage } from "../utils";
 import { styles } from "../styles";
 
-export function LoginScreen() {
+type LoginScreenProps = {
+  onForgotPassword: (email: string) => void;
+};
+
+export function LoginScreen({ onForgotPassword }: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -73,6 +77,10 @@ export function LoginScreen() {
           style={[styles.button, (loading || !canSubmit) && styles.buttonDisabled]}
         >
           <Text style={styles.buttonText}>{loading ? "Entrando..." : "Entrar"}</Text>
+        </Pressable>
+
+        <Pressable onPress={() => onForgotPassword(email.trim())} style={styles.authLinkPressable}>
+          <Text style={styles.authLink}>Esqueci minha senha</Text>
         </Pressable>
       </View>
       <StatusBar style="dark" />

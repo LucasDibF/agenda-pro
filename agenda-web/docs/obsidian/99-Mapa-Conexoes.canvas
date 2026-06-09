@@ -1,0 +1,33 @@
+{
+	"nodes":[
+		{"id":"home","type":"file","file":"00-Home.md","x":0,"y":0,"width":380,"height":220},
+		{"id":"arq","type":"file","file":"01-Arquitetura/Visao-Geral.md","x":-520,"y":-300,"width":380,"height":180},
+		{"id":"env","type":"file","file":"02-Infra-Env/Variaveis-de-Ambiente.md","x":-520,"y":-80,"width":380,"height":180},
+		{"id":"db","type":"file","file":"03-Supabase/Schema-SQL-e-RLS.md","x":-520,"y":140,"width":380,"height":180},
+		{"id":"api","type":"file","file":"04-API/Notify-Booking-API.md","x":-520,"y":360,"width":380,"height":180},
+		{"id":"mobile","type":"file","file":"05-Mobile/Push-Token-no-App.md","x":520,"y":-300,"width":380,"height":180},
+		{"id":"deploy","type":"file","file":"06-Deploy/Deploy-Vercel.md","x":520,"y":-80,"width":380,"height":180},
+		{"id":"ops","type":"file","file":"07-Operacao/Checklist-e-Troubleshooting.md","x":520,"y":140,"width":380,"height":180},
+		{"id":"wiki-home","type":"file","file":"08-Produto-Wiki/00-Wiki-Produto-Home.md","x":520,"y":360,"width":420,"height":220},
+		{"id":"wiki-visao","type":"file","file":"08-Produto-Wiki/01-Visao-e-Proposta-de-Valor.md","x":1080,"y":220,"width":420,"height":180},
+		{"id":"wiki-persona","type":"file","file":"08-Produto-Wiki/02-Personas-e-Publico-Alvo.md","x":1080,"y":430,"width":420,"height":180},
+		{"id":"wiki-jornada","type":"file","file":"08-Produto-Wiki/03-Jornada-do-Usuario.md","x":1080,"y":640,"width":420,"height":180},
+		{"id":"wiki-escopo","type":"file","file":"08-Produto-Wiki/04-Requisitos-e-Escopo-MVP.md","x":1080,"y":850,"width":420,"height":180},
+		{"id":"wiki-roadmap","type":"file","file":"08-Produto-Wiki/05-Roadmap-do-Produto.md","x":1080,"y":1060,"width":420,"height":180}
+	],
+	"edges":[
+		{"id":"e-home-wiki","fromNode":"home","fromSide":"right","toNode":"wiki-home","toSide":"left","label":"produto"},
+		{"id":"e-home-arq","fromNode":"home","fromSide":"left","toNode":"arq","toSide":"right","label":"arquitetura"},
+		{"id":"e-home-env","fromNode":"home","fromSide":"left","toNode":"env","toSide":"right","label":"env"},
+		{"id":"e-home-db","fromNode":"home","fromSide":"left","toNode":"db","toSide":"right","label":"supabase"},
+		{"id":"e-home-api","fromNode":"home","fromSide":"left","toNode":"api","toSide":"right","label":"api"},
+		{"id":"e-home-mobile","fromNode":"home","fromSide":"right","toNode":"mobile","toSide":"left","label":"mobile"},
+		{"id":"e-home-deploy","fromNode":"home","fromSide":"right","toNode":"deploy","toSide":"left","label":"deploy"},
+		{"id":"e-home-ops","fromNode":"home","fromSide":"right","toNode":"ops","toSide":"left","label":"operacao"},
+		{"id":"e-wiki-visao","fromNode":"wiki-home","fromSide":"right","toNode":"wiki-visao","toSide":"left","label":"visao"},
+		{"id":"e-wiki-persona","fromNode":"wiki-home","fromSide":"right","toNode":"wiki-persona","toSide":"left","label":"personas"},
+		{"id":"e-wiki-jornada","fromNode":"wiki-home","fromSide":"right","toNode":"wiki-jornada","toSide":"left","label":"jornada"},
+		{"id":"e-wiki-escopo","fromNode":"wiki-home","fromSide":"right","toNode":"wiki-escopo","toSide":"left","label":"mvp"},
+		{"id":"e-wiki-roadmap","fromNode":"wiki-home","fromSide":"right","toNode":"wiki-roadmap","toSide":"left","label":"roadmap"}
+	]
+}

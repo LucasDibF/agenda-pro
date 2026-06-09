@@ -1,15 +1,25 @@
-// ─── Dashboard — KPIs, agendamento do dia e link de booking ──────────────────
+// ─── Dashboard — KPIs, agendamento do dia, link de booking e marca ──────────
 
-import { useMemo, useState } from "react";
-import { Linking, Pressable, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { Image, Linking, Pressable, Text, TextInput, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import * as WebBrowser from "expo-web-browser";
 import type { ThemeTokens } from "../types";
 import { publicBookingPageUrl } from "../constants/theme";
-import { toIsoDate, formatHour, formatMoneyBr, combineDateAndTime } from "../utils";
+import { supabase } from "../lib/supabase";
+import {
+  toIsoDate,
+  formatHour,
+  formatMoneyBr,
+  combineDateAndTime,
+  pickImageFromLibrary,
+  uploadImageAsset,
+  removeFromPublicUrl,
+} from "../utils";
 import { styles } from "../styles";
 import { AnimatedSection } from "../components/AnimatedSection";
 import { useDashboard } from "../hooks/useDashboard";
+import { useBranding } from "../hooks/useBranding";
 
 type DashboardScreenProps = {
   professionalId: string;
@@ -30,12 +40,105 @@ export function DashboardScreen({
   refreshSignal,
 }: DashboardScreenProps) {
   const { data, isLoading, error, mutate } = useDashboard(professionalId);
+  const { data: branding, mutate: mutateBranding } = useBranding(professionalId);
   const [copyFeedback, setCopyFeedback] = useState("");
 
+  // Marca (logo + nome da empresa) — estado local
+  const remoteBusinessName = branding?.business_name ?? "";
+  const [businessNameDraft, setBusinessNameDraft] = useState(remoteBusinessName);
+  const [lastSyncedBusinessName, setLastSyncedBusinessName] = useState(remoteBusinessName);
+  const [savingBrand, setSavingBrand] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [brandFeedback, setBrandFeedback] = useState("");
+  const [brandError, setBrandError] = useState("");
+
+  // Sincroniza valor remoto -> draft quando muda (padrão recomendado em React 19)
+  if (remoteBusinessName !== lastSyncedBusinessName) {
+    setLastSyncedBusinessName(remoteBusinessName);
+    setBusinessNameDraft(remoteBusinessName);
+  }
+
+  const showBrandMsg = (m: string) => {
+    setBrandFeedback(m);
+    setTimeout(() => setBrandFeedback(""), 3500);
+  };
+  const showBrandErr = (m: string) => {
+    setBrandError(m);
+    setTimeout(() => setBrandError(""), 5000);
+  };
+
+  const handlePickLogo = async () => {
+    setBrandError("");
+    const asset = await pickImageFromLibrary();
+    if (!asset) return;
+    setUploadingLogo(true);
+    const result = await uploadImageAsset("logo", asset, professionalId, "logo");
+    if (!result.ok) {
+      showBrandErr(result.error);
+      setUploadingLogo(false);
+      return;
+    }
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ logo_url: result.publicUrl })
+      .eq("id", professionalId);
+    if (updateError) {
+      showBrandErr(updateError.message);
+      setUploadingLogo(false);
+      return;
+    }
+    await mutateBranding({ business_name: remoteBusinessName, logo_url: result.publicUrl }, false);
+    setUploadingLogo(false);
+    showBrandMsg("Logo atualizada.");
+  };
+
+  const handleRemoveLogo = async () => {
+    if (!branding?.logo_url) return;
+    setBrandError("");
+    setUploadingLogo(true);
+    await removeFromPublicUrl("logo", branding.logo_url);
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ logo_url: null })
+      .eq("id", professionalId);
+    if (updateError) {
+      showBrandErr(updateError.message);
+      setUploadingLogo(false);
+      return;
+    }
+    await mutateBranding({ business_name: remoteBusinessName, logo_url: null }, false);
+    setUploadingLogo(false);
+    showBrandMsg("Logo removida.");
+  };
+
+  const handleSaveBusinessName = async () => {
+    setBrandError("");
+    setSavingBrand(true);
+    const trimmed = businessNameDraft.trim() || null;
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ business_name: trimmed })
+      .eq("id", professionalId);
+    if (updateError) {
+      showBrandErr(updateError.message);
+      setSavingBrand(false);
+      return;
+    }
+    await mutateBranding(
+      { business_name: trimmed, logo_url: branding?.logo_url ?? null },
+      false,
+    );
+    setSavingBrand(false);
+    showBrandMsg("Nome da empresa salvo.");
+  };
+
   // refreshSignal do botão "↻ Atualizar" força revalidação manual
-  useMemo(() => {
-    if (refreshSignal > 0) mutate();
-  }, [refreshSignal]);
+  useEffect(() => {
+    if (refreshSignal > 0) {
+      void mutate();
+      void mutateBranding();
+    }
+  }, [refreshSignal, mutate, mutateBranding]);
 
   const bookingCode = bookingPublicSlug;
   const bookingLink = useMemo(() => publicBookingPageUrl(bookingPublicSlug), [bookingPublicSlug]);
@@ -89,9 +192,26 @@ export function DashboardScreen({
         delay={40}
         style={[styles.dashboardFeatureCard, { borderColor: theme.border, backgroundColor: theme.accent }]}
       >
-        <Text style={[styles.dashboardFeatureGreeting, { color: "#f8f8f8" }]}>{greeting}</Text>
-        <Text style={[styles.dashboardFeatureTitle, { color: "#f8f8f8" }]}>{displayName}</Text>
-        <Text style={[styles.dashboardDate, { color: "#e8f0f3" }]}>{longDate}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          <View style={styles.brandLogo}>
+            {branding?.logo_url ? (
+              <Image source={{ uri: branding.logo_url }} style={styles.brandLogoImage} />
+            ) : (
+              <Text style={styles.brandLogoPlaceholderText}>
+                {((branding?.business_name || displayName || "A")[0] ?? "A").toUpperCase()}
+              </Text>
+            )}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.dashboardFeatureGreeting, { color: "rgba(255,255,255,0.85)" }]}>
+              {greeting}
+            </Text>
+            <Text style={[styles.dashboardFeatureTitle, { color: "#ffffff" }]}>
+              {branding?.business_name?.trim() || displayName}
+            </Text>
+            <Text style={[styles.dashboardDate, { color: "rgba(255,255,255,0.78)" }]}>{longDate}</Text>
+          </View>
+        </View>
       </AnimatedSection>
 
       {error ? <Text style={styles.errorBanner}>{error.message}</Text> : null}
@@ -156,9 +276,35 @@ export function DashboardScreen({
       {/* ── Link público ───────────────────────────────────────────── */}
       <AnimatedSection delay={190} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Link de agendamento</Text>
+        <Text style={[styles.cardSubtitleSmall, { color: theme.textSecondary, marginTop: 4 }]}>
+          Compartilhe com seus clientes — eles verão sua marca no topo da página.
+        </Text>
+
+        {/* Mini-preview do hero da página pública */}
+        <View style={[styles.bookingLinkPreview, { backgroundColor: theme.accent }]}>
+          <View style={[styles.bookingLinkPreviewLogo]}>
+            {branding?.logo_url ? (
+              <Image source={{ uri: branding.logo_url }} style={styles.serviceThumbImage} />
+            ) : (
+              <Text style={styles.bookingLinkPreviewLogoText}>
+                {((branding?.business_name || displayName || "A")[0] ?? "A").toUpperCase()}
+              </Text>
+            )}
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.bookingLinkPreviewKicker}>Reservar horário</Text>
+            <Text style={styles.bookingLinkPreviewTitle} numberOfLines={1}>
+              {branding?.business_name?.trim() || displayName}
+            </Text>
+            <Text style={styles.bookingLinkPreviewDomain} numberOfLines={1}>
+              agendaonline-plum.vercel.app
+            </Text>
+          </View>
+        </View>
+
         <Text
           selectable
-          style={[styles.bookingLinkHero, { color: theme.textPrimary, marginTop: 8 }]}
+          style={[styles.bookingLinkHero, { color: theme.textPrimary, marginTop: 12 }]}
           accessibilityRole="link"
         >
           {bookingLink}
@@ -179,6 +325,85 @@ export function DashboardScreen({
           </Pressable>
         </View>
         {copyFeedback ? <Text style={styles.successBanner}>{copyFeedback}</Text> : null}
+      </AnimatedSection>
+
+      {/* ── Marca da empresa ───────────────────────────────────────── */}
+      <AnimatedSection delay={230} style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Marca da empresa</Text>
+        <Text style={[styles.cardSubtitleSmall, { color: theme.textSecondary, marginTop: 4 }]}>
+          A logo e o nome aparecem no topo do seu link de agendamento.
+        </Text>
+
+        <View style={[styles.serviceRowWithThumb, { marginTop: 12 }]}>
+          <View style={[styles.serviceThumb, { width: 72, height: 72, borderRadius: 20 }]}>
+            {branding?.logo_url ? (
+              <Image source={{ uri: branding.logo_url }} style={styles.serviceThumbImage} />
+            ) : (
+              <Text style={[styles.serviceThumbPlaceholder, { fontSize: 24 }]}>
+                {((branding?.business_name || displayName || "A")[0] ?? "A").toUpperCase()}
+              </Text>
+            )}
+          </View>
+          <View style={{ flex: 1, gap: 8 }}>
+            <View style={styles.serviceThumbActions}>
+              <Pressable
+                onPress={handlePickLogo}
+                disabled={uploadingLogo}
+                style={styles.imagePickerBtn}
+              >
+                <Text style={styles.imagePickerBtnText}>
+                  {uploadingLogo ? "…" : branding?.logo_url ? "Trocar logo" : "Enviar logo"}
+                </Text>
+              </Pressable>
+              {branding?.logo_url ? (
+                <Pressable
+                  onPress={handleRemoveLogo}
+                  disabled={uploadingLogo}
+                  style={styles.imagePickerDangerBtn}
+                >
+                  <Text style={styles.imagePickerDangerBtnText}>Remover</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        </View>
+
+        <Text
+          style={[
+            styles.appointmentMeta,
+            { color: theme.textSecondary, marginTop: 14, marginBottom: 6 },
+          ]}
+        >
+          Nome da sua empresa
+        </Text>
+        <TextInput
+          value={businessNameDraft}
+          onChangeText={setBusinessNameDraft}
+          placeholder="Ex: Studio Aurora Beauty"
+          placeholderTextColor={theme.textSecondary}
+          maxLength={80}
+          style={[
+            styles.input,
+            { backgroundColor: theme.background, borderColor: theme.border, color: theme.textPrimary },
+          ]}
+        />
+        <Pressable
+          onPress={handleSaveBusinessName}
+          disabled={savingBrand}
+          style={[
+            styles.button,
+            styles.refreshButton,
+            { backgroundColor: theme.buttonPrimary, marginTop: 8 },
+            savingBrand && styles.buttonDisabled,
+          ]}
+        >
+          <Text style={[styles.buttonText, { color: theme.buttonPrimaryText }]}>
+            {savingBrand ? "Salvando…" : "Salvar nome"}
+          </Text>
+        </Pressable>
+
+        {brandError ? <Text style={styles.errorBanner}>{brandError}</Text> : null}
+        {brandFeedback ? <Text style={styles.successBanner}>{brandFeedback}</Text> : null}
       </AnimatedSection>
     </View>
   );

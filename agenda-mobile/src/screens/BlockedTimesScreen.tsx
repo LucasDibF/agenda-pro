@@ -1,6 +1,6 @@
 // ─── Tela de bloqueios de horário ─────────────────────────────────────────────
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { supabase } from "../lib/supabase";
@@ -33,7 +33,7 @@ export function BlockedTimesScreen({ professionalId, theme }: BlockedTimesScreen
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const loadRows = async () => {
+  const loadRows = useCallback(async () => {
     setLoading(true);
     setError("");
     const { data, error: fetchError } = await supabase
@@ -50,11 +50,11 @@ export function BlockedTimesScreen({ professionalId, theme }: BlockedTimesScreen
 
     setRows((data ?? []) as BlockedTimeRow[]);
     setLoading(false);
-  };
+  }, [professionalId]);
 
   useEffect(() => {
-    loadRows();
-  }, [professionalId]);
+    void loadRows();
+  }, [loadRows]);
 
   const handleCreate = async () => {
     setMessage("");

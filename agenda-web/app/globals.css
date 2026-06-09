@@ -1,0 +1,273 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Panda Font";
+  src: url("/fonts/PandaFont.woff2") format("woff2"),
+    url("/fonts/PandaFont.ttf") format("truetype");
+  font-display: swap;
+}
+
+:root {
+  --background: #fbf9ff;
+  --foreground: #1a1626;
+  --surface: #ffffff;
+  --surface-soft: #f7f2ff;
+  --line: #ece6f7;
+  --line-strong: #d8ccf0;
+  --accent: #a855f7;
+  --accent-dark: #7c3aed;
+  --accent-soft: #f3e8ff;
+  --accent-softer: #faf5ff;
+  --accent-grad-from: #c084fc;
+  --accent-grad-to: #7c3aed;
+  --ink-strong: #0f0a1a;
+  --text-secondary: #5b4f72;
+  --text-muted: #8b7fa8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #100a1f;
+    --foreground: #f0eaff;
+    --surface: #1a1330;
+    --surface-soft: #221a3d;
+    --line: #2d2349;
+    --line-strong: #3f3263;
+    --accent: #c084fc;
+    --accent-dark: #a855f7;
+    --accent-soft: #2a1f47;
+    --accent-softer: #1d1535;
+    --accent-grad-from: #c084fc;
+    --accent-grad-to: #9333ea;
+    --ink-strong: #faf5ff;
+    --text-secondary: #c4b8e0;
+    --text-muted: #9484b8;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-brand: var(--font-brand-serif);
+}
+
+body {
+  min-height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer components {
+  .page-shell {
+    @apply min-h-screen;
+  }
+
+  .hero-shell {
+    @apply rounded-3xl border p-8;
+    border-color: var(--line);
+    background: var(--surface);
+  }
+
+  .elevated-card {
+    @apply rounded-3xl border;
+    border-color: var(--line);
+    background: var(--surface);
+    box-shadow: 0 4px 24px -8px rgba(124, 58, 237, 0.08);
+  }
+
+  .muted-card {
+    @apply rounded-3xl border;
+    border-color: var(--line);
+    background: var(--surface-soft);
+  }
+
+  /* ─── Botões ──────────────────────────────────────────────────────────── */
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--accent-grad-from) 0%, var(--accent-grad-to) 100%);
+    box-shadow: 0 8px 20px -4px rgba(124, 58, 237, 0.45);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px -4px rgba(124, 58, 237, 0.55);
+    filter: brightness(1.04);
+  }
+
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .btn-soft {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border px-5 py-2.5 text-sm font-semibold transition-colors duration-150;
+    border-color: var(--line);
+    color: var(--foreground);
+    background: var(--surface);
+  }
+
+  .btn-soft:hover:not(:disabled) {
+    background: var(--accent-softer);
+    border-color: var(--accent);
+    color: var(--accent-dark);
+  }
+
+  .btn-soft:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .input-shell {
+    @apply w-full rounded-2xl border px-4 py-3 text-sm outline-none transition-all duration-150;
+    border-color: var(--line);
+    background: var(--surface);
+    color: var(--foreground);
+  }
+
+  .input-shell::placeholder {
+    color: var(--text-muted);
+  }
+
+  .input-shell:hover {
+    border-color: var(--line-strong);
+  }
+
+  .input-shell:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+
+  /* ─── Pill (tabs e chips) ─────────────────────────────────────────────── */
+
+  .pill {
+    @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-semibold transition-colors duration-150;
+    background: var(--surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--line);
+  }
+
+  .pill:hover:not(:disabled) {
+    background: var(--accent-softer);
+    color: var(--accent-dark);
+  }
+
+  .pill.is-active {
+    background: linear-gradient(135deg, var(--accent-grad-from), var(--accent-grad-to));
+    color: #ffffff;
+    border-color: transparent;
+    box-shadow: 0 4px 12px -3px rgba(124, 58, 237, 0.4);
+  }
+
+  /* ─── Typography ──────────────────────────────────────────────────────── */
+
+  .title-display {
+    color: var(--ink-strong);
+    letter-spacing: -0.02em;
+    font-family: var(--font-brand), "Times New Roman", serif;
+    font-weight: 600;
+  }
+
+  .brand-word {
+    font-family: "Panda Font", var(--font-brand), "Times New Roman", serif;
+    letter-spacing: -0.02em;
+    color: var(--accent-dark);
+  }
+
+  .text-body-secondary {
+    color: var(--text-secondary);
+  }
+
+  .text-body-muted {
+    color: var(--text-muted);
+  }
+
+  .text-link-accent {
+    color: var(--accent-dark);
+    text-decoration-thickness: 1px;
+  }
+
+  .text-link-accent:hover {
+    text-decoration-line: underline;
+    filter: brightness(1.1);
+  }
+
+  /* ─── Callouts ────────────────────────────────────────────────────────── */
+
+  .callout-warning {
+    @apply rounded-2xl border px-4 py-3 text-sm;
+    border-color: #fde68a;
+    background: #fffbeb;
+    color: #92400e;
+  }
+
+  .callout-danger {
+    @apply rounded-2xl border px-4 py-3 text-sm;
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
+  }
+
+  .callout-success {
+    @apply rounded-2xl border px-4 py-3 text-sm;
+    border-color: #a7f3d0;
+    background: #ecfdf5;
+    color: #065f46;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .callout-warning {
+      border-color: #78350f;
+      background: color-mix(in oklab, #451a03 55%, var(--surface) 45%);
+      color: #fde68a;
+    }
+
+    .callout-danger {
+      border-color: #7f1d1d;
+      background: color-mix(in oklab, #450a0a 45%, var(--surface) 55%);
+      color: #fecaca;
+    }
+
+    .callout-success {
+      border-color: #064e3b;
+      background: color-mix(in oklab, #052e16 42%, var(--surface) 58%);
+      color: #bbf7d0;
+    }
+
+    .elevated-card {
+      box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.4);
+    }
+  }
+}
+
+/* ─── Animação mínima (fade entre etapas) ────────────────────────────────── */
+
+@keyframes fadeStep {
+  0%   { opacity: 0; transform: translate3d(0, 8px, 0); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .anim-step {
+    animation: fadeStep 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .anim-pop {
+    animation: popIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+}

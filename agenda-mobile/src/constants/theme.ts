@@ -11,9 +11,10 @@ export const APP_VERSION = "1.0.11";
 // Alinhado com `NEXT_PUBLIC_BOOKING_APP_URL` + `PUBLIC_BOOKING_APP_FALLBACK` em web.
 // Prioridade em app: EXPO_PUBLIC_BOOKING_APP_URL → EXPO_PUBLIC_WEB_APP_URL → plum embutido.
 
-const BOOKING_WORKING_SITE_URL = "https://lash-agenda-plum.vercel.app";
+const BOOKING_WORKING_SITE_URL = "https://agendaonline-plum.vercel.app";
 
 const LEGACY_BOOKING_HOSTS = new Set([
+  "lash-agenda-plum.vercel.app",
   "lash-agenda.vercel.app",
   "lash-agenda-k66ipli1j-lucas-freitas-dibs-projects.vercel.app",
 ]);
@@ -59,33 +60,33 @@ export function publicBookingPageUrl(bookingSlug: string): string {
 
 export const APP_THEMES: Record<ThemeMode, ThemeTokens> = {
   dark: {
-    background: "#000000",
-    card: "#12141A",
-    border: "#2A2E3A",
-    textPrimary: "#ECECF3",
-    textSecondary: "#B7BDCC",
-    accent: "#A78BFA",
-    accentSoft: "#2A203D",
-    buttonPrimary: "#8B5CF6",
-    buttonPrimaryText: "#F7F5FF",
-    tabBg: "#191C25",
-    tabText: "#DCE0EB",
-    tabSelectedBg: "#8B5CF6",
+    background: "#100A1F",
+    card: "#1A1330",
+    border: "#2D2349",
+    textPrimary: "#F0EAFF",
+    textSecondary: "#C4B8E0",
+    accent: "#C084FC",
+    accentSoft: "#2A1F47",
+    buttonPrimary: "#A855F7",
+    buttonPrimaryText: "#FFFFFF",
+    tabBg: "#1A1330",
+    tabText: "#C4B8E0",
+    tabSelectedBg: "#A855F7",
     tabSelectedText: "#FFFFFF",
   },
   light: {
-    background: "#FFFFFF",
-    card: "#F8F9FC",
-    border: "#E5E7EE",
-    textPrimary: "#1F2430",
-    textSecondary: "#6E7380",
-    accent: "#8B5CF6",
-    accentSoft: "#EDE8FF",
-    buttonPrimary: "#7C4DFF",
+    background: "#FBF9FF",
+    card: "#FFFFFF",
+    border: "#ECE6F7",
+    textPrimary: "#0F0A1A",
+    textSecondary: "#5B4F72",
+    accent: "#7C3AED",
+    accentSoft: "#F3E8FF",
+    buttonPrimary: "#7C3AED",
     buttonPrimaryText: "#FFFFFF",
-    tabBg: "#F1F3F8",
-    tabText: "#62697A",
-    tabSelectedBg: "#8B5CF6",
+    tabBg: "#FFFFFF",
+    tabText: "#5B4F72",
+    tabSelectedBg: "#7C3AED",
     tabSelectedText: "#FFFFFF",
   },
 };
@@ -94,12 +95,12 @@ export const APP_THEMES: Record<ThemeMode, ThemeTokens> = {
 
 const PARTICLE_COUNT = 100;
 
-export const PARTICLE_LAYOUT: Array<{
+export const PARTICLE_LAYOUT: {
   top: number;
   left: number;
   size: number;
   depth: ParticleDepth;
-}> = Array.from({ length: PARTICLE_COUNT }, (_, index) => {
+}[] = Array.from({ length: PARTICLE_COUNT }, (_, index) => {
   const depth: ParticleDepth = index % 3 === 0 ? "near" : index % 3 === 1 ? "mid" : "far";
   const size = 3 + (index % 4);
   const top = 4 + ((index * 37) % 92);
@@ -109,7 +110,7 @@ export const PARTICLE_LAYOUT: Array<{
 
 // ─── Tabs de navegação ────────────────────────────────────────────────────────
 
-export const tabs: Array<{ value: AppTab; label: string }> = [
+export const tabs: { value: AppTab; label: string }[] = [
   { value: "dashboard", label: "Painel" },
   { value: "services", label: "Serviços" },
   { value: "agenda", label: "Agenda" },
@@ -119,7 +120,7 @@ export const tabs: Array<{ value: AppTab; label: string }> = [
 
 // ─── Opções de status do agendamento ─────────────────────────────────────────
 
-export const statusOptions: Array<{ value: AppointmentStatus; label: string }> = [
+export const statusOptions: { value: AppointmentStatus; label: string }[] = [
   { value: "agendado", label: "Agendado" },
   { value: "confirmado", label: "Confirmado" },
   { value: "cancelado", label: "Cancelado" },
@@ -128,7 +129,7 @@ export const statusOptions: Array<{ value: AppointmentStatus; label: string }> =
 
 // ─── Opções de dia da semana ──────────────────────────────────────────────────
 
-export const weekdayOptions: Array<{ value: number; label: string }> = [
+export const weekdayOptions: { value: number; label: string }[] = [
   { value: 1, label: "Segunda" },
   { value: 2, label: "Terça" },
   { value: 3, label: "Quarta" },

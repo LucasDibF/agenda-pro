@@ -1,14 +1,20 @@
 // ─── Ponto de entrada do app mobile ──────────────────────────────────────────
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { ActivityIndicator, Pressable, Text } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./src/lib/supabase";
+import { ForgotPasswordScreen } from "./src/screens/ForgotPasswordScreen";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { ProfessionalArea } from "./src/screens/ProfessionalArea";
+import { ResetPasswordScreen } from "./src/screens/ResetPasswordScreen";
+import { handleAuthDeepLink } from "./src/utils/auth-deep-link";
 import { styles } from "./src/styles";
+
+type AuthView = "login" | "forgot" | "reset";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -32,6 +38,9 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const [sessionError, setSessionError] = useState(false);
+  const [authView, setAuthView] = useState<AuthView>("login");
+  const [awaitingPasswordReset, setAwaitingPasswordReset] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
 
   const loadSession = async () => {
     setLoadingSession(true);
@@ -46,17 +55,40 @@ export default function App() {
     }
   };
 
+  const processIncomingUrl = useCallback(async (url: string | null) => {
+    if (!url || !url.includes("auth/callback")) return;
+
+    const ok = await handleAuthDeepLink(url);
+    if (ok) {
+      setAwaitingPasswordReset(true);
+      setAuthView("reset");
+    }
+  }, []);
+
   useEffect(() => {
     loadSession();
 
+    void Linking.getInitialURL().then(processIncomingUrl);
+
+    const linkSubscription = Linking.addEventListener("url", ({ url }) => {
+      void processIncomingUrl(url);
+    });
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, currentSession) => {
+      (event, currentSession) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setAwaitingPasswordReset(true);
+          setAuthView("reset");
+        }
         setSession(currentSession);
       }
     );
 
-    return () => { authListener.subscription.unsubscribe(); };
-  }, []);
+    return () => {
+      linkSubscription.remove();
+      authListener.subscription.unsubscribe();
+    };
+  }, [processIncomingUrl]);
 
   if (loadingSession) {
     return (
@@ -84,10 +116,40 @@ export default function App() {
     );
   }
 
+  if (awaitingPasswordReset || authView === "reset") {
+    return (
+      <SafeAreaProvider>
+        <ResetPasswordScreen
+          onBackToForgot={() => {
+            setAwaitingPasswordReset(false);
+            setAuthView("forgot");
+          }}
+          onSuccess={() => {
+            setAwaitingPasswordReset(false);
+            setAuthView("login");
+            setSession(null);
+          }}
+        />
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       {!session ? (
-        <LoginScreen />
+        authView === "forgot" ? (
+          <ForgotPasswordScreen
+            initialEmail={loginEmail}
+            onBack={() => setAuthView("login")}
+          />
+        ) : (
+          <LoginScreen
+            onForgotPassword={(email) => {
+              setLoginEmail(email);
+              setAuthView("forgot");
+            }}
+          />
+        )
       ) : (
         <ProfessionalArea session={session} />
       )}

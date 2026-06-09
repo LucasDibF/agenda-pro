@@ -15,6 +15,7 @@ Aplicativo mobile da área da profissional (Expo); usa o mesmo backend Supabase 
 ## Funcionalidades atuais
 
 - Login da profissional com Supabase
+- Recuperação de senha (email + deep link no app)
 - Dashboard com:
   - saudação
   - agenda de hoje
@@ -54,7 +55,7 @@ Preencha:
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://SEU-PROJETO.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_xxxxxxxxxxxxxxxxx
-EXPO_PUBLIC_WEB_APP_URL=https://lash-agenda-plum.vercel.app
+EXPO_PUBLIC_WEB_APP_URL=https://agendaonline-plum.vercel.app
 ```
 
 ## Rodar localmente
@@ -71,6 +72,16 @@ Atalhos:
 - `i`: iOS (macOS + Simulator)
 - ou QR Code no Expo Go
 
+## Recuperação de senha (Supabase)
+
+No painel Supabase → **Authentication → URL Configuration**, adicione em **Redirect URLs**:
+
+```text
+agenda-mobile://auth/callback
+```
+
+O app usa esse deep link para abrir a tela de nova senha após o clique no email.
+
 ## Observação sobre sessão
 
 Atualmente o app está configurado com `persistSession: false` no cliente Supabase mobile para evitar erro nativo de storage em algumas instalações.
@@ -85,4 +96,4 @@ Se você quiser persistência de sessão, pode migrar para `expo-secure-store` e
 
 ## Documento consolidado
 
-- Consulte também: `../lash-agenda/docs/Documentacao_Atualizada.md`
+- Consulte também: `../agenda-web/docs/Documentacao_Atualizada.md`

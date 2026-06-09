@@ -53,7 +53,7 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
   const [rescheduleDate, setRescheduleDate] = useState(toIsoDate());
   const [rescheduleStartTime, setRescheduleStartTime] = useState("");
   const [rescheduleSlotOptions, setRescheduleSlotOptions] = useState<
-    Array<{ startTime: string; endTime: string }>
+    { startTime: string; endTime: string }[]
   >([]);
   const [loadingRescheduleSlots, setLoadingRescheduleSlots] = useState(false);
   const [showRescheduleDatePicker, setShowRescheduleDatePicker] = useState(false);
@@ -139,8 +139,8 @@ export function AgendaScreen({ professionalId, theme }: AgendaScreenProps) {
           reschedulingAppointment.end_time,
         ),
         availabilityRows: (availabilityRes.data ?? []) as AvailabilityRow[],
-        blockedRows: (blockedRes.data ?? []) as Array<{ start_at: string; end_at: string }>,
-        bookedRows: (bookedRes.data ?? []) as Array<{ start_time: string; end_time: string }>,
+        blockedRows: (blockedRes.data ?? []) as { start_at: string; end_at: string }[],
+        bookedRows: (bookedRes.data ?? []) as { start_time: string; end_time: string }[],
         excludeAppointmentId: reschedulingId,
         dailyBreak,
       });

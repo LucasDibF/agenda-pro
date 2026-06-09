@@ -1,6 +1,6 @@
 // ─── Tela de disponibilidade — configuração semanal de horários ───────────────
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import type { AvailabilityRow, ThemeTokens } from "../types";
@@ -26,7 +26,7 @@ export function AvailabilityScreen({ professionalId, theme }: AvailabilityScreen
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  const loadRows = async () => {
+  const loadRows = useCallback(async () => {
     setLoading(true);
     setError("");
     const [availRes, profileRes] = await Promise.all([
@@ -61,11 +61,11 @@ export function AvailabilityScreen({ professionalId, theme }: AvailabilityScreen
     }
 
     setLoading(false);
-  };
+  }, [professionalId]);
 
   useEffect(() => {
-    loadRows();
-  }, [professionalId]);
+    void loadRows();
+  }, [loadRows]);
 
   const resetForm = () => {
     setWeekday(1);

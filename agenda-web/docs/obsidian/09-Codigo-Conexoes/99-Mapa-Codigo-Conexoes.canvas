@@ -1,0 +1,29 @@
+{
+	"nodes":[
+		{"id":"mobile-app","type":"text","text":"MOBILE APP\n- App.tsx\n- src/lib/supabase.ts\n- index.ts\n- app.json / eas.json","x":-1120,"y":-40,"width":420,"height":180,"color":"6"},
+		{"id":"home-codigo","type":"file","file":"09-Codigo-Conexoes/00-Home-Codigo.md","x":60,"y":-240,"width":420,"height":220,"color":"4"},
+		{"id":"inventario-web","type":"file","file":"09-Codigo-Conexoes/01-Inventario-Web.md","x":-620,"y":-440,"width":420,"height":180,"color":"1"},
+		{"id":"inventario-mobile","type":"file","file":"09-Codigo-Conexoes/02-Inventario-Mobile.md","x":-620,"y":-110,"width":420,"height":180,"color":"6"},
+		{"id":"conexoes-web","type":"file","file":"09-Codigo-Conexoes/04-Conexoes-Web.md","x":560,"y":-440,"width":420,"height":180,"color":"1"},
+		{"id":"todos-arquivos","type":"file","file":"09-Codigo-Conexoes/06-Todos-Arquivos-Codigo.md","x":480,"y":170,"width":420,"height":180,"color":"2"},
+		{"id":"conexoes-mobile","type":"file","file":"09-Codigo-Conexoes/05-Conexoes-Mobile.md","x":0,"y":365,"width":420,"height":475,"color":"6"},
+		{"id":"inventario-infra","type":"file","file":"09-Codigo-Conexoes/03-Inventario-Infra-Config.md","x":-740,"y":350,"width":420,"height":490,"color":"5"},
+		{"id":"components-web","type":"text","text":"WEB COMPONENTS\n- components/auth/*\n- components/public/*\n- components/professional/*\n- lib/supabase/client.ts","x":1100,"y":45,"width":430,"height":190},
+		{"id":"database-sql","type":"text","text":"BANCO DE DADOS\n- supabase/sql/mvp_schema.sql\n- tabelas: profiles, services,\n  availability, blocked_times,\n  appointments\n- regras: triggers + RLS","x":1100,"y":235,"width":430,"height":210},
+		{"id":"app-router","type":"text","text":"WEB APP ROUTER\n- app/layout.tsx\n- app/page.tsx\n- app/login/page.tsx\n- app/register/page.tsx\n- app/(public)/booking/*\n- app/(dashboard)/professional/*\n- app/api/notify-booking/route.ts","x":1100,"y":-195,"width":430,"height":240}
+	],
+	"edges":[
+		{"id":"e-home-web","fromNode":"home-codigo","fromSide":"left","toNode":"inventario-web","toSide":"right","label":"inventario"},
+		{"id":"e-home-mobile","fromNode":"home-codigo","fromSide":"left","toNode":"inventario-mobile","toSide":"right","color":"6","label":"inventario"},
+		{"id":"e-home-infra","fromNode":"home-codigo","fromSide":"left","toNode":"inventario-infra","toSide":"right","color":"4","label":"infra"},
+		{"id":"e-home-cweb","fromNode":"home-codigo","fromSide":"right","toNode":"conexoes-web","toSide":"left","color":"4","label":"conexoes"},
+		{"id":"e-home-cmob","fromNode":"home-codigo","fromSide":"right","toNode":"conexoes-mobile","toSide":"top","color":"4","label":"conexoes"},
+		{"id":"e-home-todos","fromNode":"home-codigo","fromSide":"right","toNode":"todos-arquivos","toSide":"left","color":"4","label":"lista completa"},
+		{"id":"e-cweb-router","fromNode":"conexoes-web","fromSide":"right","toNode":"app-router","toSide":"left","label":"rotas"},
+		{"id":"e-cweb-components","fromNode":"conexoes-web","fromSide":"right","toNode":"components-web","toSide":"left","label":"componentes"},
+		{"id":"e-cweb-db","fromNode":"conexoes-web","fromSide":"right","toNode":"database-sql","toSide":"left","label":"dados"},
+		{"id":"e-cmob-app","fromNode":"conexoes-mobile","fromSide":"left","toNode":"mobile-app","toSide":"right","color":"6","label":"arquitetura"},
+		{"id":"e-invweb-todos","fromNode":"inventario-web","fromSide":"right","toNode":"todos-arquivos","toSide":"left","color":"1","label":"incluido"},
+		{"id":"e-invmob-todos","fromNode":"inventario-mobile","fromSide":"right","toNode":"todos-arquivos","toSide":"left","color":"1","label":"incluido"}
+	]
+}

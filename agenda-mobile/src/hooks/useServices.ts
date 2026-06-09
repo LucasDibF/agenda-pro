@@ -7,7 +7,7 @@ import type { ServiceRow } from "../types";
 const fetcher = async ([, id]: [string, string]): Promise<ServiceRow[]> => {
   const { data, error } = await supabase
     .from("services")
-    .select("id, name, duration_minutes, price, description, is_active, created_at")
+    .select("id, name, duration_minutes, price, description, image_url, is_active, created_at")
     .eq("professional_id", id)
     .order("created_at", { ascending: false });
 

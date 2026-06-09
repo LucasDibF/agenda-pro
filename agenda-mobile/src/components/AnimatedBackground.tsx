@@ -3,12 +3,20 @@
 import { useEffect, useRef } from "react";
 import { Animated, Easing, View } from "react-native";
 import type { ThemeMode } from "../types";
-import { PARTICLE_LAYOUT } from "../constants/theme";
+import { APP_THEMES, PARTICLE_LAYOUT } from "../constants/theme";
 import { styles } from "../styles";
 
 type AnimatedBackgroundProps = {
   mode: ThemeMode | "light";
 };
+
+function withAlpha(hex: string, alpha: number): string {
+  const normalized = hex.replace("#", "");
+  const r = Number.parseInt(normalized.slice(0, 2), 16);
+  const g = Number.parseInt(normalized.slice(2, 4), 16);
+  const b = Number.parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 export function AnimatedBackground({ mode }: AnimatedBackgroundProps) {
   const motionA = useRef(new Animated.Value(0)).current;
@@ -52,9 +60,11 @@ export function AnimatedBackground({ mode }: AnimatedBackgroundProps) {
   const opacitySpark = motionB.interpolate({ inputRange: [0, 1], outputRange: [0.24, 0.52] });
   const scale = motionA.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.14] });
 
-  const isDark = mode === "dark";
-  const colorPrimary = isDark ? "rgba(245,238,255,0.7)" : "rgba(76,39,182,0.56)";
-  const colorSecondary = isDark ? "rgba(199,180,255,0.64)" : "rgba(122,89,220,0.5)";
+  const themeMode = mode === "light" ? "light" : "dark";
+  const accent = APP_THEMES[themeMode].accent;
+  const isDark = themeMode === "dark";
+  const colorPrimary = withAlpha(accent, isDark ? 0.52 : 0.42);
+  const colorSecondary = withAlpha(accent, isDark ? 0.34 : 0.26);
 
   return (
     <View pointerEvents="none" style={styles.animatedBackgroundLayer}>

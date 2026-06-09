@@ -1,12 +1,14 @@
 // ─── Utilitários do app mobile ────────────────────────────────────────────────
 
+import type { AppointmentRow, AvailabilityRow, SlotOption } from "../types";
+
 export { normalizeBookingPublicSlug } from "./booking-link";
 export { fetchBookingPublicSegment } from "./profile-booking";
 export { friendlySupabaseMessage } from "./supabase-errors";
-
-import type { User } from "@supabase/supabase-js";
-import type { AppointmentRow, AvailabilityRow, SlotOption } from "../types";
-import { supabase } from "../lib/supabase";
+export { ensureProfessionalProfile } from "./profile";
+export { validatePassword } from "./password";
+export { pickImageFromLibrary, uploadImageAsset, removeFromPublicUrl } from "./upload";
+export type { UploadKind, UploadResult } from "./upload";
 
 // ─── Data e hora ──────────────────────────────────────────────────────────────
 
@@ -93,8 +95,8 @@ export function generateRescheduleSlots(params: {
   rescheduleDate: string;
   durationMinutes: number;
   availabilityRows: AvailabilityRow[];
-  blockedRows: Array<{ start_at: string; end_at: string }>;
-  bookedRows: Array<{ start_time: string; end_time: string }>;
+  blockedRows: { start_at: string; end_at: string }[];
+  bookedRows: { start_time: string; end_time: string }[];
   excludeAppointmentId: string;
   /** Intervalo diário (ex.: almoço): não gera slots que intersectem esse período. */
   dailyBreak?: { startTime: string; endTime: string } | null;
@@ -183,20 +185,3 @@ export const buildWhatsappUrlForAppointment = (appointment: AppointmentRow): str
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 };
 
-// ─── Perfil ───────────────────────────────────────────────────────────────────
-
-/** Cria ou atualiza o perfil da profissional logada. Retorna erro ou null. */
-export const ensureProfessionalProfile = async (user: User) => {
-  const fullName =
-    typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : null;
-  const phone = typeof user.user_metadata?.phone === "string" ? user.user_metadata.phone : null;
-
-  const { error } = await supabase.from("profiles").upsert({
-    id: user.id,
-    full_name: fullName,
-    phone,
-    role: "professional",
-  });
-
-  return error;
-};

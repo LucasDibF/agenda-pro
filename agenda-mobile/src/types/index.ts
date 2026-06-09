@@ -41,7 +41,7 @@ export type AppointmentRow = {
 
 // Supabase retorna joins como array ou objeto — este tipo cobre os dois formatos
 export type AppointmentSelectRow = Omit<AppointmentRow, "service"> & {
-  service: Array<{ name: string }> | { name: string } | null;
+  service: { name: string }[] | { name: string } | null;
 };
 
 export type UpcomingAppointmentRow = {
@@ -59,6 +59,7 @@ export type ServiceRow = {
   duration_minutes: number;
   price: number;
   description: string | null;
+  image_url: string | null;
   is_active: boolean;
   created_at: string;
 };
@@ -96,7 +97,7 @@ export type DashboardAppointmentSelectRow = {
   start_time: string;
   end_time: string;
   status: AppointmentStatus;
-  service: Array<{ name: string; price: number }> | { name: string; price: number } | null;
+  service: { name: string; price: number }[] | { name: string; price: number } | null;
 };
 
 // ─── Tipos de slot (Agenda / Reagendamento) ───────────────────────────────────

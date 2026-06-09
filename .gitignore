@@ -1,3 +1,22 @@
+# dependencies
 node_modules
+
+# macOS
 .DS_Store
+
+# env
 **/.env
+**/.env.local
+**/.env.*.local
+
+# evita stray na raiz (instalacao tem que ser dentro de cada app)
+/package.json
+/package-lock.json
+
+# notes locais / vault Obsidian (nao versionar)
+.obsidian/
+**/.obsidian/
+requirements.txt
+
+# relatorios / docs internos com risco de credenciais
+/Relatorio_Seguranca_Performance.docx
