@@ -1,64 +1,60 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const brandSerif = Playfair_Display({
-  variable: "--font-brand-serif",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0c10" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f2ee" },
+    { media: "(prefers-color-scheme: dark)", color: "#161014" },
   ],
 };
 
+const lilloDescription =
+  "Lillo — agenda online para profissionais. Elegante, clara e fácil de usar.";
+
 export const metadata: Metadata = {
   title: {
-    default: "Agenda Online",
-    template: "%s · Agenda Online",
+    default: "Lillo",
+    template: "%s · Lillo",
   },
-  applicationName: "Agenda Online",
-  description: "App de agendamento online para profissionais",
+  applicationName: "Lillo",
+  description: lilloDescription,
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "Lillo",
+    title: "Lillo",
+    description: lilloDescription,
+    images: [{ url: "/icons/lillo-192.png", width: 192, height: 192, alt: "Lillo" }],
+  },
+  twitter: {
+    card: "summary",
+    title: "Lillo",
+    description: lilloDescription,
+    images: ["/icons/lillo-192.png"],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Lillo",
+    statusBarStyle: "default",
+  },
   icons: {
     icon: [
       {
-        url: "/icons/icon-light.png",
+        url: "/icons/lillo-192.png",
         type: "image/png",
-        sizes: "755x1024",
-        media: "(prefers-color-scheme: light)",
+        sizes: "192x192",
       },
       {
-        url: "/icons/icon-dark.png",
+        url: "/icons/icon-512.png",
         type: "image/png",
-        sizes: "755x1024",
-        media: "(prefers-color-scheme: dark)",
+        sizes: "512x512",
       },
     ],
     apple: [
       {
-        url: "/icons/icon-light.png",
+        url: "/icons/apple-touch-icon.png",
         sizes: "180x180",
         type: "image/png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icons/icon-dark.png",
-        sizes: "180x180",
-        type: "image/png",
-        media: "(prefers-color-scheme: dark)",
       },
     ],
   },
@@ -70,10 +66,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="pt-BR"
-      className={`${geistSans.variable} ${geistMono.variable} ${brandSerif.variable} h-full antialiased`}
-    >
+    <html lang="pt-BR" className="h-full antialiased">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

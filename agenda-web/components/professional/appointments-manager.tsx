@@ -74,31 +74,31 @@ export function AppointmentsManager() {
 
   return (
     <section className="space-y-6">
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-neutral-900">Agendamentos por dia</h2>
-        <p className="mt-1 text-sm text-neutral-600">
+      <div className="elevated-card p-5">
+        <h2 className="title-display text-lg">Agendamentos por dia</h2>
+        <p className="mt-1 text-sm text-body-secondary">
           Visualize os agendamentos e altere o status rapidamente.
         </p>
 
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <label className="space-y-1 md:col-span-1">
-            <span className="text-sm font-medium text-neutral-700">Data</span>
+            <span className="field-label">Data</span>
             <input
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             />
           </label>
 
-          <article className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
-            <p className="text-xs text-neutral-500">Total no dia</p>
-            <p className="text-2xl font-bold text-neutral-900">{isLoading ? "—" : totalAppointments}</p>
+          <article className="muted-card p-3">
+            <p className="text-xs text-body-muted">Total no dia</p>
+            <p className="text-2xl font-bold text-[var(--ink-strong)]">{isLoading ? "—" : totalAppointments}</p>
           </article>
 
-          <article className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
-            <p className="text-xs text-neutral-500">Confirmados</p>
-            <p className="text-2xl font-bold text-neutral-900">{isLoading ? "—" : confirmedAppointments}</p>
+          <article className="muted-card p-3">
+            <p className="text-xs text-body-muted">Confirmados</p>
+            <p className="text-2xl font-bold text-[var(--ink-strong)]">{isLoading ? "—" : confirmedAppointments}</p>
           </article>
         </div>
 
@@ -110,13 +110,13 @@ export function AppointmentsManager() {
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h3 className="text-lg font-semibold text-neutral-900">Lista do dia</h3>
+      <div className="elevated-card p-5">
+        <h3 className="title-display text-lg">Lista do dia</h3>
 
         {isLoading ? (
-          <p className="mt-4 text-sm text-neutral-600">Carregando agendamentos...</p>
+          <p className="mt-4 text-sm text-body-secondary">Carregando agendamentos...</p>
         ) : appointments.length === 0 ? (
-          <p className="mt-4 text-sm text-neutral-600">
+          <p className="mt-4 text-sm text-body-secondary">
             Nenhum agendamento encontrado para esta data.
           </p>
         ) : (
@@ -124,34 +124,34 @@ export function AppointmentsManager() {
             {appointments.map((appointment) => (
               <article
                 key={appointment.id}
-                className="rounded-lg border border-neutral-200 bg-neutral-50 p-4"
+                className="muted-card p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="font-semibold text-neutral-900">
+                    <p className="font-semibold text-[var(--ink-strong)]">
                       {appointment.start_time.slice(0, 5)} — {appointment.end_time.slice(0, 5)} •{" "}
                       {appointment.service?.name ?? "Servico"}
                     </p>
-                    <p className="text-sm text-neutral-700">{appointment.customer_name}</p>
-                    <p className="text-sm text-neutral-500">
+                    <p className="text-sm text-body-secondary">{appointment.customer_name}</p>
+                    <p className="text-sm text-body-muted">
                       {appointment.customer_phone}
                       {appointment.customer_email ? ` • ${appointment.customer_email}` : ""}
                     </p>
                     {appointment.notes ? (
-                      <p className="text-sm text-neutral-500">Obs: {appointment.notes}</p>
+                      <p className="text-sm text-body-muted">Obs: {appointment.notes}</p>
                     ) : null}
                   </div>
 
                   <div className="space-y-2">
                     <label className="space-y-1">
-                      <span className="text-xs font-medium text-neutral-600">Status</span>
+                      <span className="field-label text-xs">Status</span>
                       <select
                         value={appointment.status}
                         disabled={updatingId === appointment.id}
                         onChange={(e) =>
                           handleChangeStatus(appointment.id, e.target.value as AppointmentStatus)
                         }
-                        className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none ring-pink-300 focus:ring disabled:opacity-70"
+                        className="input-shell disabled:opacity-70"
                       >
                         {statusOptions.map((opt) => (
                           <option key={opt.value} value={opt.value}>{opt.label}</option>

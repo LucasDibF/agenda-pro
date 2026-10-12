@@ -15,7 +15,7 @@ Profissionais perdem tempo com:
 
 ## Proposta de valor
 
-O Agenda SaaS oferece:
+O Lillo oferece:
 
 - agendamento online com regras de disponibilidade;
 - painel de gestão (serviços, horários, bloqueios e agenda);

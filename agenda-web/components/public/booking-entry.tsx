@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { supabase } from "@/lib/supabase/client";
 import { fetchBookingPublicSegment } from "@/lib/utils/profile-booking";
 
@@ -42,6 +43,7 @@ export function BookingEntry() {
     return (
       <main className="page-shell">
         <section className="mx-auto max-w-3xl space-y-4 px-6 py-12">
+          <BrandMark size="sm" />
           <h1 className="title-display text-3xl font-bold">Agendar horario</h1>
           <p className="text-body-secondary">Carregando...</p>
         </section>
@@ -51,7 +53,8 @@ export function BookingEntry() {
 
   return (
     <main className="page-shell">
-      <section className="mx-auto max-w-3xl space-y-6 px-6 py-12">
+        <section className="mx-auto max-w-3xl space-y-6 px-6 py-12">
+        <BrandMark size="sm" />
         <h1 className="title-display text-3xl font-bold">Agendar horario</h1>
 
         <form onSubmit={handleSubmit} className="elevated-card space-y-4 p-5">

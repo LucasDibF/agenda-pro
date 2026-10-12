@@ -3,24 +3,24 @@ import type { MetadataRoute } from "next";
 /** PWA/meta; navegadores ainda diferem quanto ao ícone por tema — favicons em layout.tsx tratam prefers-color-scheme. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Agenda Online",
-    short_name: "Agenda Online",
-    description: "App de agendamento online para profissionais",
+    name: "Lillo",
+    short_name: "Lillo",
+    description: "Lillo — agenda online para profissionais. Elegante, clara e fácil de usar.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#8b5cf6",
+    background_color: "#f7f2ee",
+    theme_color: "#b8899e",
     icons: [
       {
-        src: "/icons/icon-light.png",
+        src: "/icons/lillo-192.png",
         type: "image/png",
-        sizes: "755x1024",
+        sizes: "192x192",
         purpose: "any",
       },
       {
-        src: "/icons/icon-dark.png",
+        src: "/icons/icon-512.png",
         type: "image/png",
-        sizes: "755x1024",
+        sizes: "512x512",
         purpose: "any",
       },
     ],

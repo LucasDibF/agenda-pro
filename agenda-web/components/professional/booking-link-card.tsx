@@ -36,8 +36,8 @@ export function BookingLinkCard() {
 
   return (
     <article className="elevated-card p-4 md:col-span-6">
-      <h2 className="text-sm font-medium text-[#6E7380]">Link de agendamento</h2>
-      <p className="mt-3 break-all text-sm font-medium text-[#1F2430]">
+      <h2 className="text-sm font-medium text-body-secondary">Link de agendamento</h2>
+      <p className="mt-3 break-all text-sm font-medium text-[var(--ink-strong)]">
         {bookingLink || "Carregando link..."}
       </p>
       <div className="mt-3 flex items-center gap-3">
@@ -49,7 +49,7 @@ export function BookingLinkCard() {
         >
           Copiar link
         </button>
-        {feedback ? <span className="text-xs text-[#8B5CF6]">{feedback}</span> : null}
+        {feedback ? <span className="text-xs text-[var(--accent-dark)]">{feedback}</span> : null}
       </div>
     </article>
   );

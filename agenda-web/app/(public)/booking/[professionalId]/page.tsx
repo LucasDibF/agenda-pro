@@ -1,3 +1,4 @@
+import { BrandMark } from "@/components/brand/brand-mark";
 import { BookingFlow } from "@/components/public/booking-flow";
 import {
   fetchPublicAvailability,
@@ -40,7 +41,7 @@ export default async function PublicBookingPage({ params }: BookingPageProps) {
       className="page-shell pb-32 sm:pb-24"
       style={{ background: "var(--background)" }}
     >
-      {/* ── Hero topbar (gradiente roxo) ─────────────────────────────── */}
+      {/* ── Hero topbar (champagne → lavanda) ────────────────────────── */}
       <header
         className="relative isolate overflow-hidden"
         style={{
@@ -63,9 +64,7 @@ export default async function PublicBookingPage({ params }: BookingPageProps) {
         <div className="relative z-10 mx-auto flex min-h-[260px] max-w-2xl flex-col justify-between gap-6 px-5 pb-10 pt-8 sm:min-h-[280px] sm:px-6 sm:pb-12 sm:pt-10">
           {/* Topo: brand + status */}
           <div className="flex items-center justify-between text-white">
-            <span className="text-base font-semibold tracking-tight sm:text-lg">
-              Agenda Online
-            </span>
+            <BrandMark size="sm" wordClassName="font-semibold tracking-tight text-white" />
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[0.7rem] font-semibold uppercase tracking-wider ring-1 ring-white/25 backdrop-blur-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-white" />
               Online
@@ -96,8 +95,8 @@ export default async function PublicBookingPage({ params }: BookingPageProps) {
               <h1
                 className="mt-1 text-2xl font-bold leading-tight text-white sm:text-3xl"
                 style={{
-                  fontFamily: "var(--font-brand), 'Times New Roman', serif",
-                  letterSpacing: "-0.02em",
+                  fontFamily: "var(--font-nunito), Nunito, sans-serif",
+                  letterSpacing: "-0.035em",
                 }}
               >
                 {heroTitle}

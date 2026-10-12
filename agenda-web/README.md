@@ -1,6 +1,6 @@
-# Agenda Online — aplicação web
+# Lillo — aplicação web
 
-Aplicação web do SaaS de agendamento para profissionais.
+Aplicação web do Lillo, agenda online para profissionais.
 
 ## Stack
 

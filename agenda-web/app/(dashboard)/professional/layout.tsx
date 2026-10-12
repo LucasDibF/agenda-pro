@@ -1,8 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { RealtimeMount } from "@/components/auth/realtime-mount";
 import { SignOutButton } from "@/components/auth/sign-out-button";
+import { BrandMark } from "@/components/brand/brand-mark";
+import { FadeIn } from "@/components/motion/primitives";
+import { ProfessionalNav } from "@/components/professional/professional-nav";
 import { createServerSupabase } from "@/lib/supabase/server";
 
 // ─── Layout do painel da profissional ────────────────────────────────────────
@@ -36,36 +38,15 @@ export default async function ProfessionalLayout({
       {/* Canal Realtime ativo enquanto o painel está aberto — sem auth check */}
       <RealtimeMount professionalId={user.id} />
 
-      <header className="border-b border-[#E5E7EE] bg-[#FFFFFF]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/" className="brand-word text-2xl leading-none">
-            Agenda
-          </Link>
+      <header className="border-b border-[var(--line)] bg-[color-mix(in_oklab,var(--surface)_88%,transparent)] backdrop-blur">
+        <FadeIn className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <BrandMark size="sm" />
 
           <div className="flex items-center gap-6">
-            <nav className="flex items-center gap-4 text-sm">
-              <Link
-                href="/professional"
-                className="text-[#6E7380] hover:text-[#8B5CF6] hover:underline"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/professional/services"
-                className="text-[#6E7380] hover:text-[#8B5CF6] hover:underline"
-              >
-                Serviços
-              </Link>
-              <Link
-                href="/professional/calendar"
-                className="text-[#6E7380] hover:text-[#8B5CF6] hover:underline"
-              >
-                Agenda
-              </Link>
-            </nav>
+            <ProfessionalNav />
             <SignOutButton />
           </div>
-        </div>
+        </FadeIn>
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>

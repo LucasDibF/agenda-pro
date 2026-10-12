@@ -10,9 +10,9 @@ import { BookingLinkCard } from "@/components/professional/booking-link-card";
 import { BrandingManager } from "@/components/professional/branding-manager";
 
 const getStatusChip = (status: AppointmentStatus): string => {
-  if (status === "confirmado") return "bg-[#EDE8FF] text-[#5B3CC4]";
-  if (status === "agendado") return "bg-[#F3F0FF] text-[#6C47DE]";
-  if (status === "concluido") return "bg-[#EEF0F7] text-[#4C5568]";
+  if (status === "confirmado") return "bg-[var(--accent-soft)] text-[var(--accent-dark)]";
+  if (status === "agendado") return "bg-[var(--accent-softer)] text-[var(--accent-dark)]";
+  if (status === "concluido") return "bg-[var(--surface-soft)] text-[var(--text-secondary)]";
   return "bg-[#F8EAF2] text-[#944A70]";
 };
 
@@ -46,13 +46,13 @@ export function DashboardOverview() {
   return (
     <div className="grid gap-4 md:grid-cols-6">
       <article className="hero-shell md:col-span-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8B5CF6]">
+        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-dark)]">
           Painel da profissional
         </p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="title-display text-2xl font-bold">Visao geral do seu dia</h2>
-            <p className="mt-1 text-sm text-[#6E7380]">
+            <h2 className="title-display text-2xl">Visao geral do seu dia</h2>
+            <p className="mt-1 text-sm text-body-secondary">
               Acompanhe agendamentos e servicos.
             </p>
           </div>
@@ -68,23 +68,23 @@ export function DashboardOverview() {
       </article>
 
       <article className="elevated-card p-4 md:col-span-2">
-        <h2 className="text-sm font-medium text-[#6E7380]">Agendamentos hoje</h2>
-        <p className="mt-2 text-3xl font-bold text-[#1F2430]">
+        <h2 className="text-sm font-medium text-body-secondary">Agendamentos hoje</h2>
+        <p className="mt-2 text-3xl font-bold text-[var(--ink-strong)]">
           {isLoading ? "—" : data?.todayCount ?? 0}
         </p>
       </article>
 
       <article className="elevated-card p-4 md:col-span-2">
-        <h2 className="text-sm font-medium text-[#6E7380]">Serviços ativos</h2>
-        <p className="mt-2 text-3xl font-bold text-[#1F2430]">
+        <h2 className="text-sm font-medium text-body-secondary">Serviços ativos</h2>
+        <p className="mt-2 text-3xl font-bold text-[var(--ink-strong)]">
           {isLoading ? "—" : data?.activeServicesCount ?? 0}
         </p>
       </article>
 
       <article className="elevated-card p-4 md:col-span-2">
-        <h2 className="text-sm font-medium text-[#6E7380]">Status do sistema</h2>
+        <h2 className="text-sm font-medium text-body-secondary">Status do sistema</h2>
         <p className={`mt-2 text-base font-semibold ${
-          isLoading ? "text-neutral-400" : errorMessage ? "text-amber-700" : "text-green-700"
+          isLoading ? "text-body-muted" : errorMessage ? "text-amber-700" : "text-green-700"
         }`}>
           {systemStatus}
         </p>
@@ -100,14 +100,14 @@ export function DashboardOverview() {
       </article>
 
       <article className="elevated-card p-4 md:col-span-6">
-        <h2 className="text-sm font-medium text-[#6E7380]">Proximos agendamentos</h2>
+        <h2 className="text-sm font-medium text-body-secondary">Proximos agendamentos</h2>
 
         {errorMessage ? (
           <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{errorMessage}</p>
         ) : isLoading ? (
-          <p className="mt-3 text-sm text-[#6E7380]">Carregando dados...</p>
+          <p className="mt-3 text-sm text-body-secondary">Carregando dados...</p>
         ) : !data?.upcomingAppointments.length ? (
-          <div className="muted-card mt-3 px-4 py-3 text-sm text-[#6E7380]">
+          <div className="muted-card mt-3 px-4 py-3 text-sm text-body-secondary">
             Nenhum proximo agendamento.
           </div>
         ) : (
@@ -116,10 +116,10 @@ export function DashboardOverview() {
               <div key={appointment.id} className="muted-card px-3 py-3 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="font-semibold text-[#1F2430]">
+                    <p className="font-semibold text-[var(--ink-strong)]">
                       {formatDateBr(appointment.appointment_date)} {appointment.start_time.slice(0, 5)}
                     </p>
-                    <p className="text-[#6E7380]">
+                    <p className="text-body-secondary">
                       {appointment.customer_name} • {appointment.service?.name ?? "Servico"}
                     </p>
                   </div>

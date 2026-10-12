@@ -6,7 +6,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { supabase } from "../lib/supabase";
 import { AnimatedBackground } from "../components/AnimatedBackground";
-import { APP_VERSION } from "../constants/theme";
 import { friendlySupabaseMessage } from "../utils";
 import { validatePassword } from "../utils/password";
 import { styles } from "../styles";
@@ -107,7 +106,7 @@ export function ResetPasswordScreen({ onBackToForgot, onSuccess }: ResetPassword
       <SafeAreaView style={styles.authContainer}>
         <AnimatedBackground mode="light" />
         <View style={styles.authCard}>
-          <Text style={styles.brand}>{`v${APP_VERSION}`}</Text>
+          <Text style={styles.brand}>Lillo</Text>
           <Text style={styles.title}>Link invalido ou expirado</Text>
           <Text style={styles.subtitle}>Solicite um novo link de recuperacao de senha.</Text>
 
@@ -124,7 +123,7 @@ export function ResetPasswordScreen({ onBackToForgot, onSuccess }: ResetPassword
     <SafeAreaView style={styles.authContainer}>
       <AnimatedBackground mode="light" />
       <View style={styles.authCard}>
-        <Text style={styles.brand}>{`v${APP_VERSION}`}</Text>
+        <Text style={styles.brand}>Lillo</Text>
         <Text style={styles.title}>Nova senha</Text>
         <Text style={styles.subtitle}>
           Escolha uma senha forte para acessar o painel da profissional.

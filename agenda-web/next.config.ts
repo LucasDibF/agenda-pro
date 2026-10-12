@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 function buildContentSecurityPolicy(): string {
@@ -24,10 +25,10 @@ function buildContentSecurityPolicy(): string {
   return [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `connect-src ${connectSrc}`,
     `img-src ${imgSrc}`,
-    "font-src 'self'",
+    "font-src 'self' https://fonts.gstatic.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -56,9 +57,33 @@ function supabaseImageHostname(): string | null {
 
 const supabaseImgHost = supabaseImageHostname();
 
+const appRoot = path.resolve(__dirname);
+
+const isDev = process.env.NODE_ENV !== "production";
+
 const nextConfig: NextConfig = {
+  // O repo vive no iCloud Drive. Escrever .next lá congela o File Provider
+  // e o localhost para de responder. Pasta *.nosync fica fora da sync.
+  distDir: isDev ? ".next.nosync" : ".next",
+  allowedDevOrigins: ["127.0.0.1"],
+  // Trava o root neste app. process.cwd() sobe para o monorepo e o bundler
+  // passa a observar mobile, docs e caches — o que trava o compile.
   turbopack: {
-    root: process.cwd(),
+    root: appRoot,
+  },
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [
+          "**/node_modules/**",
+          "**/.next/**",
+          "**/.next.nosync/**",
+          "**/docs/**",
+        ],
+      };
+    }
+    return config;
   },
   images: supabaseImgHost
     ? {

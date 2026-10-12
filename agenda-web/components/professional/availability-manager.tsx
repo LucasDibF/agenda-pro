@@ -226,24 +226,24 @@ export function AvailabilityManager() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-neutral-200 bg-white p-6">
-        <p className="text-sm text-neutral-600">Carregando horarios...</p>
+      <div className="elevated-card p-6">
+        <p className="text-sm text-body-secondary">Carregando horarios...</p>
       </div>
     );
   }
 
   return (
     <section className="space-y-6">
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-neutral-900">Intervalo do dia</h2>
-        <p className="mt-1 text-sm text-neutral-600">
+      <div className="elevated-card p-5">
+        <h2 className="title-display text-lg">Intervalo do dia</h2>
+        <p className="mt-1 text-sm text-body-secondary">
           Defina um periodo fixo (ex.: almoco) em que ninguem pode agendar. Vale para todos os dias em
           que voce tem disponibilidade.
         </p>
 
         <form onSubmit={handleSaveDailyBreak} className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Inicio do intervalo</span>
+            <span className="field-label">Inicio do intervalo</span>
             <input
               type="time"
               value={breakStart}
@@ -253,11 +253,11 @@ export function AvailabilityManager() {
                   end: prev?.end ?? data?.dailyBreak.breakEnd ?? "",
                 }))
               }
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             />
           </label>
           <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Fim do intervalo</span>
+            <span className="field-label">Fim do intervalo</span>
             <input
               type="time"
               value={breakEnd}
@@ -267,7 +267,7 @@ export function AvailabilityManager() {
                   end: e.target.value,
                 }))
               }
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             />
           </label>
 
@@ -286,28 +286,28 @@ export function AvailabilityManager() {
           <button
             type="submit"
             disabled={submittingBreak}
-            className="w-full rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 md:col-span-2"
+            className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-70 md:col-span-2"
           >
             {submittingBreak ? "Salvando..." : "Salvar intervalo"}
           </button>
         </form>
       </div>
 
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-neutral-900">
+      <div className="elevated-card p-5">
+        <h2 className="title-display text-lg">
           Configurar horarios de atendimento
         </h2>
-        <p className="mt-1 text-sm text-neutral-600">
+        <p className="mt-1 text-sm text-body-secondary">
           Defina os dias e faixas de horario que podem receber agendamentos.
         </p>
 
         <form onSubmit={handleCreateAvailability} className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="space-y-1 md:col-span-2">
-            <span className="text-sm font-medium text-neutral-700">Dia da semana</span>
+            <span className="field-label">Dia da semana</span>
             <select
               value={form.weekday}
               onChange={(event) => setForm((prev) => ({ ...prev, weekday: event.target.value }))}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             >
               {weekdayOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -318,7 +318,7 @@ export function AvailabilityManager() {
           </label>
 
           <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Inicio</span>
+            <span className="field-label">Inicio</span>
             <input
               type="time"
               value={form.startTime}
@@ -326,18 +326,18 @@ export function AvailabilityManager() {
                 setForm((prev) => ({ ...prev, startTime: event.target.value }))
               }
               required
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             />
           </label>
 
           <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Fim</span>
+            <span className="field-label">Fim</span>
             <input
               type="time"
               value={form.endTime}
               onChange={(event) => setForm((prev) => ({ ...prev, endTime: event.target.value }))}
               required
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             />
           </label>
 
@@ -356,18 +356,18 @@ export function AvailabilityManager() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 md:col-span-2"
+            className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-70 md:col-span-2"
           >
             {submitting ? "Salvando..." : "Adicionar horario"}
           </button>
         </form>
       </div>
 
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-neutral-900">Horarios cadastrados</h2>
+      <div className="elevated-card p-5">
+        <h2 className="title-display text-lg">Horarios cadastrados</h2>
 
         {availabilityRows.length === 0 ? (
-          <p className="mt-4 text-sm text-neutral-600">
+          <p className="mt-4 text-sm text-body-secondary">
             Nenhuma faixa de horario cadastrada ainda.
           </p>
         ) : (
@@ -380,15 +380,15 @@ export function AvailabilityManager() {
               return (
                 <article
                   key={row.id}
-                  className="rounded-lg border border-neutral-200 bg-neutral-50 p-4"
+                  className="muted-card p-4"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="space-y-1">
-                      <p className="font-semibold text-neutral-900">{weekdayLabel}</p>
-                      <p className="text-sm text-neutral-600">
+                      <p className="font-semibold text-[var(--ink-strong)]">{weekdayLabel}</p>
+                      <p className="text-sm text-body-secondary">
                         {row.start_time.slice(0, 5)} – {row.end_time.slice(0, 5)}
                       </p>
-                      <p className="text-xs text-neutral-500">
+                      <p className="text-xs text-body-muted">
                         {row.is_active ? "Ativo" : "Inativo"}
                       </p>
                     </div>
@@ -397,7 +397,7 @@ export function AvailabilityManager() {
                       <button
                         type="button"
                         onClick={() => handleToggleActive(row)}
-                        className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
+                        className="btn-soft px-3 py-2 text-xs"
                       >
                         {row.is_active ? "Desativar" : "Ativar"}
                       </button>

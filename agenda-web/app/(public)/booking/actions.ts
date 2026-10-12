@@ -1,8 +1,10 @@
 "use server";
 
+import { headers } from "next/headers";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { sendBookingPushNotification } from "@/lib/notifications/send-booking-push";
+import { checkRateLimit, readClientIp } from "@/lib/rate-limit";
 
 export type SubmitPublicBookingInput = {
   professionalId: string;
@@ -35,9 +37,34 @@ function normalizeRpcError(error: { message: string; code?: string }): string {
   return error.message;
 }
 
+function bookingWaitMessage(retryAfterSec: number): string {
+  if (retryAfterSec >= 60) {
+    const minutes = Math.ceil(retryAfterSec / 60);
+    const unit = minutes === 1 ? "minuto" : "minutos";
+    return `Muitas tentativas de agendamento. Aguarde ${minutes} ${unit} e tente de novo.`;
+  }
+  return "Muitas tentativas de agendamento. Aguarde alguns segundos e tente de novo.";
+}
+
+async function publicBookingRateError(): Promise<string | null> {
+  const headerStore = await headers();
+  const ip = readClientIp(headerStore);
+  const rate = checkRateLimit(`public-booking:${ip}`, {
+    limit: 8,
+    windowMs: 10 * 60_000,
+    scope: "public-booking",
+    globalLimit: 200,
+  });
+  if (!rate.ok) return bookingWaitMessage(rate.retryAfterSec);
+  return null;
+}
+
 export async function submitPublicBooking(
   input: SubmitPublicBookingInput,
 ): Promise<SubmitPublicBookingResult> {
+  const rateError = await publicBookingRateError();
+  if (rateError) return { ok: false, error: rateError };
+
   const payload = {
     professional_id: input.professionalId,
     service_id: input.serviceId,

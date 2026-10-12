@@ -95,7 +95,7 @@ function ProfessionalAreaContent({ session }: ProfessionalAreaProps) {
       if (Platform.OS === "web") return;
       if (Platform.OS === "android") {
         await Notifications.setNotificationChannelAsync("default", {
-          name: "default",
+          name: "Lillo",
           importance: Notifications.AndroidImportance.HIGH,
         });
       }
@@ -156,7 +156,7 @@ function ProfessionalAreaContent({ session }: ProfessionalAreaProps) {
       <View style={[styles.topHeader, { borderBottomColor: theme.border }]}>
         <View>
           <Text style={[styles.brand, { color: theme.accent }]}>{`v${APP_VERSION}`}</Text>
-          <Text style={[styles.title, { color: theme.textPrimary }]}>Agenda Online</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>Lillo</Text>
         </View>
         <View style={styles.headerButtonsRow}>
           <Pressable

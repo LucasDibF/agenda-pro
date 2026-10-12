@@ -134,8 +134,8 @@ export function BrandingManager() {
     <article className="elevated-card p-5 md:col-span-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-medium text-[#6E7380]">Marca da sua agenda</h2>
-          <p className="mt-1 text-xs text-[#8B7FA8]">
+          <h2 className="text-sm font-medium text-body-secondary">Marca da sua agenda</h2>
+          <p className="mt-1 text-xs text-body-muted">
             A logo e o nome aparecem no topo do seu link de agendamento público.
           </p>
         </div>

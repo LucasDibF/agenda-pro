@@ -1,4 +1,4 @@
-# Agenda SaaS - Base de Conhecimento (Obsidian)
+# Lillo — Base de Conhecimento (Obsidian)
 
 > Ponto de entrada da documentação técnica.
 

@@ -1,13 +1,17 @@
 {
-  "name": "agenda-web",
+  "name": "lillo",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/prepare-dev.mjs && next dev --webpack",
+    "dev:turbo": "node scripts/prepare-dev.mjs && next dev --turbopack",
+    "dev:clean": "rm -rf .next .next.nosync && node scripts/prepare-dev.mjs && next dev --webpack",
+    "recover": "PREPARE_DEV_FORCE=1 node scripts/prepare-dev.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test lib/rate-limit.test.ts"
   },
   "engines": {
     "node": ">=20"
@@ -15,6 +19,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.1",
+    "framer-motion": "^14.1.0",
     "next": "16.2.6",
     "react": "19.2.6",
     "react-dom": "19.2.6",

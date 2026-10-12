@@ -1,8 +1,8 @@
-# Documentação Atualizada - Agenda SaaS
+# Documentação Atualizada — Lillo
 
 ## Visão geral
 
-O projeto é um SaaS de agendamento para profissionais, com duas interfaces:
+O Lillo é a agenda online para profissionais, com duas interfaces:
 
 - **Web (`agenda-web`)**: painel profissional + página pública de agendamento.
 - **Mobile (`agenda-mobile`)**: app da profissional com as operações principais.

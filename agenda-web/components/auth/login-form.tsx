@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { AuthMotion } from "@/components/motion/auth-motion";
+import { MotionAlert } from "@/components/motion/primitives";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { supabase } from "@/lib/supabase/client";
 
 type LoginFormProps = {
@@ -81,34 +84,38 @@ export function LoginForm({ nextPath, notice }: LoginFormProps) {
   return (
     <main className="page-shell">
       <section className="mx-auto flex max-w-md flex-col gap-6 px-6 py-16">
-        <div className="space-y-2">
-          <h1 className="title-display text-3xl font-bold">Entrar no painel</h1>
-          <p className="text-sm text-[#6E7380]">
-            Use seu email e senha da profissional para acessar.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="elevated-card space-y-4 p-5">
+        <AuthMotion
+          header={
+            <>
+              <BrandMark size="sm" />
+              <h1 className="title-display text-3xl">Entrar no painel</h1>
+              <p className="text-sm text-body-secondary">
+                Use seu email e senha da profissional para acessar.
+              </p>
+            </>
+          }
+          card={
+            <form onSubmit={handleSubmit} className="elevated-card space-y-4 p-5">
           {notice === "check-email" ? (
-            <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <MotionAlert className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
               Conta criada. Confirme seu email para liberar o login por senha.
-            </p>
+            </MotionAlert>
           ) : null}
 
           {notice === "password-reset" ? (
-            <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+            <MotionAlert className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
               Senha atualizada com sucesso. Faca login com a nova senha.
-            </p>
+            </MotionAlert>
           ) : null}
 
           {notice === "auth-callback-error" ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            <MotionAlert className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
               Link invalido ou expirado. Solicite um novo link de recuperacao.
-            </p>
+            </MotionAlert>
           ) : null}
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#6E7380]">Email</span>
+            <span className="text-sm font-medium text-body-secondary">Email</span>
             <input
               type="email"
               value={email}
@@ -121,10 +128,10 @@ export function LoginForm({ nextPath, notice }: LoginFormProps) {
 
           <label className="block space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#6E7380]">Senha</span>
+              <span className="text-sm font-medium text-body-secondary">Senha</span>
               <Link
                 href="/forgot-password"
-                className="text-xs font-medium text-[#8B5CF6] hover:underline"
+                className="text-link-accent text-xs font-medium"
               >
                 Esqueci minha senha
               </Link>
@@ -140,15 +147,15 @@ export function LoginForm({ nextPath, notice }: LoginFormProps) {
           </label>
 
           {errorMessage ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            <MotionAlert className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
               {errorMessage}
-            </p>
+            </MotionAlert>
           ) : null}
 
           {infoMessage ? (
-            <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
+            <MotionAlert className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">
               {infoMessage}
-            </p>
+            </MotionAlert>
           ) : null}
 
           <button
@@ -169,14 +176,17 @@ export function LoginForm({ nextPath, notice }: LoginFormProps) {
               Reenviar email de confirmacao
             </button>
           ) : null}
-        </form>
-
-        <p className="text-sm text-[#6E7380]">
-          Ainda nao tem conta?{" "}
-          <Link href="/register" className="font-medium text-[#8B5CF6] hover:underline">
-            Criar acesso da profissional
-          </Link>
-        </p>
+            </form>
+          }
+          footer={
+            <p className="text-sm text-body-secondary">
+              Ainda nao tem conta?{" "}
+              <Link href="/register" className="text-link-accent font-medium">
+                Criar acesso da profissional
+              </Link>
+            </p>
+          }
+        />
       </section>
     </main>
   );

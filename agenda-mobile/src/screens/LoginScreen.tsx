@@ -6,7 +6,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { supabase } from "../lib/supabase";
 import { AnimatedBackground } from "../components/AnimatedBackground";
-import { APP_VERSION } from "../constants/theme";
 import { friendlySupabaseMessage } from "../utils";
 import { styles } from "../styles";
 
@@ -49,8 +48,8 @@ export function LoginScreen({ onForgotPassword }: LoginScreenProps) {
     <SafeAreaView style={styles.authContainer}>
       <AnimatedBackground mode="light" />
       <View style={styles.authCard}>
-        <Text style={styles.brand}>{`v${APP_VERSION}`}</Text>
-        <Text style={styles.title}>Entrar no painel mobile</Text>
+        <Text style={styles.brand}>Lillo</Text>
+        <Text style={styles.title}>Entrar no painel</Text>
         <Text style={styles.subtitle}>Use o mesmo login da versão web.</Text>
 
         <TextInput

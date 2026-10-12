@@ -6,7 +6,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { supabase } from "../lib/supabase";
 import { AnimatedBackground } from "../components/AnimatedBackground";
-import { APP_VERSION } from "../constants/theme";
 import { friendlySupabaseMessage } from "../utils";
 import { getPasswordResetRedirectUrl } from "../utils/auth-url";
 import { styles } from "../styles";
@@ -52,7 +51,7 @@ export function ForgotPasswordScreen({ initialEmail = "", onBack }: ForgotPasswo
     <SafeAreaView style={styles.authContainer}>
       <AnimatedBackground mode="light" />
       <View style={styles.authCard}>
-        <Text style={styles.brand}>{`v${APP_VERSION}`}</Text>
+        <Text style={styles.brand}>Lillo</Text>
         <Text style={styles.title}>Esqueci minha senha</Text>
         <Text style={styles.subtitle}>
           Informe o email da profissional. Enviaremos um link para criar uma nova senha.

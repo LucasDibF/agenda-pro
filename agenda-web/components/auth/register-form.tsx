@@ -5,6 +5,9 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AuthMotion } from "@/components/motion/auth-motion";
+import { MotionAlert } from "@/components/motion/primitives";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { supabase } from "@/lib/supabase/client";
 import { validatePassword } from "@/lib/utils/password";
 
@@ -65,16 +68,20 @@ export function RegisterForm() {
   return (
     <main className="page-shell">
       <section className="mx-auto flex max-w-md flex-col gap-6 px-6 py-16">
-        <div className="space-y-2">
-          <h1 className="title-display text-3xl font-bold">Criar conta da profissional</h1>
-          <p className="text-sm text-[#6E7380]">
-            Primeiro acesso do painel administrativo.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="elevated-card space-y-4 p-5">
+        <AuthMotion
+          header={
+            <>
+              <BrandMark size="sm" />
+              <h1 className="title-display text-3xl">Criar conta da profissional</h1>
+              <p className="text-sm text-body-secondary">
+                Primeiro acesso do painel administrativo.
+              </p>
+            </>
+          }
+          card={
+            <form onSubmit={handleSubmit} className="elevated-card space-y-4 p-5">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#6E7380]">Nome completo</span>
+            <span className="text-sm font-medium text-body-secondary">Nome completo</span>
             <input
               type="text"
               value={fullName}
@@ -86,7 +93,7 @@ export function RegisterForm() {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#6E7380]">Telefone</span>
+            <span className="text-sm font-medium text-body-secondary">Telefone</span>
             <input
               type="tel"
               value={phone}
@@ -98,7 +105,7 @@ export function RegisterForm() {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#6E7380]">Email</span>
+            <span className="text-sm font-medium text-body-secondary">Email</span>
             <input
               type="email"
               value={email}
@@ -110,7 +117,7 @@ export function RegisterForm() {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#6E7380]">Senha</span>
+            <span className="text-sm font-medium text-body-secondary">Senha</span>
             <input
               type="password"
               value={password}
@@ -123,9 +130,9 @@ export function RegisterForm() {
           </label>
 
           {errorMessage ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            <MotionAlert className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
               {errorMessage}
-            </p>
+            </MotionAlert>
           ) : null}
 
           <button
@@ -135,14 +142,17 @@ export function RegisterForm() {
           >
             {loading ? "Criando conta..." : "Criar conta"}
           </button>
-        </form>
-
-        <p className="text-sm text-[#6E7380]">
-          Ja tem conta?{" "}
-          <Link href="/login" className="font-medium text-[#8B5CF6] hover:underline">
-            Fazer login
-          </Link>
-        </p>
+            </form>
+          }
+          footer={
+            <p className="text-sm text-body-secondary">
+              Ja tem conta?{" "}
+              <Link href="/login" className="text-link-accent font-medium">
+                Fazer login
+              </Link>
+            </p>
+          }
+        />
       </section>
     </main>
   );

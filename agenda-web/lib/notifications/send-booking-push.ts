@@ -37,7 +37,7 @@ export async function sendBookingPushNotification(appointmentId: string): Promis
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       to: profile.push_token,
-      title: "Novo agendamento",
+      title: "Lillo · Novo agendamento",
       body: `${appointment.customer_name} marcou para ${dateBr} as ${hour}.`,
       sound: "default",
     }),

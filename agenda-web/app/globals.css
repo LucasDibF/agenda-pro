@@ -1,65 +1,72 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Panda Font";
-  src: url("/fonts/PandaFont.woff2") format("woff2"),
-    url("/fonts/PandaFont.ttf") format("truetype");
-  font-display: swap;
-}
+/* Evita o PostCSS varrer .next/docs/node_modules e entrar em loop de rebuild. */
+@source not "../.next";
+@source not "../docs";
+@source not "../node_modules";
+@source "../app";
+@source "../components";
+@source "../lib";
 
 :root {
-  --background: #fbf9ff;
-  --foreground: #1a1626;
-  --surface: #ffffff;
-  --surface-soft: #f7f2ff;
-  --line: #ece6f7;
-  --line-strong: #d8ccf0;
-  --accent: #a855f7;
-  --accent-dark: #7c3aed;
-  --accent-soft: #f3e8ff;
-  --accent-softer: #faf5ff;
-  --accent-grad-from: #c084fc;
-  --accent-grad-to: #7c3aed;
-  --ink-strong: #0f0a1a;
-  --text-secondary: #5b4f72;
-  --text-muted: #8b7fa8;
+  --background: #f7f2ee;
+  --foreground: #2c2428;
+  --surface: #fffdfb;
+  --surface-soft: #f3ebe6;
+  --line: #e8ddd4;
+  --line-strong: #d4c4b8;
+  --accent: #b8899e;
+  --accent-dark: #7a5368;
+  --accent-soft: #f4e8ee;
+  --accent-softer: #fbf6f4;
+  --accent-grad-from: #d4a088;
+  --accent-grad-to: #9a7bb5;
+  --ink-strong: #1f191c;
+  --text-secondary: #6a5c62;
+  --text-muted: #9a8b90;
+  --shadow-tint: 180 120 140;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #100a1f;
-    --foreground: #f0eaff;
-    --surface: #1a1330;
-    --surface-soft: #221a3d;
-    --line: #2d2349;
-    --line-strong: #3f3263;
-    --accent: #c084fc;
-    --accent-dark: #a855f7;
-    --accent-soft: #2a1f47;
-    --accent-softer: #1d1535;
-    --accent-grad-from: #c084fc;
-    --accent-grad-to: #9333ea;
-    --ink-strong: #faf5ff;
-    --text-secondary: #c4b8e0;
-    --text-muted: #9484b8;
+    --background: #161014;
+    --foreground: #f4ede8;
+    --surface: #221c20;
+    --surface-soft: #2a2228;
+    --line: #3a3036;
+    --line-strong: #4a3e46;
+    --accent: #d4b0c0;
+    --accent-dark: #e8c4b0;
+    --accent-soft: #3a2834;
+    --accent-softer: #241820;
+    --accent-grad-from: #d4a088;
+    --accent-grad-to: #b8a0d0;
+    --ink-strong: #fbf6f2;
+    --text-secondary: #c8b8be;
+    --text-muted: #9a8a90;
+    --shadow-tint: 0 0 0;
   }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-brand: var(--font-brand-serif);
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-brand: Nunito, ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
   min-height: 100%;
-  background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background);
+  background-image:
+    radial-gradient(1200px 640px at 0% -10%, color-mix(in oklab, var(--accent-grad-from) 22%, transparent), transparent 58%),
+    radial-gradient(900px 520px at 100% 110%, color-mix(in oklab, var(--accent-grad-to) 20%, transparent), transparent 52%);
+  background-attachment: fixed;
 }
 
 @layer components {
@@ -68,20 +75,22 @@ body {
   }
 
   .hero-shell {
-    @apply rounded-3xl border p-8;
+    @apply rounded-[2rem] border p-8;
     border-color: var(--line);
-    background: var(--surface);
+    background: color-mix(in oklab, var(--surface) 86%, transparent);
+    box-shadow: 0 18px 40px -24px rgb(var(--shadow-tint) / 0.45);
+    backdrop-filter: blur(18px);
   }
 
   .elevated-card {
-    @apply rounded-3xl border;
+    @apply rounded-[1.75rem] border;
     border-color: var(--line);
     background: var(--surface);
-    box-shadow: 0 4px 24px -8px rgba(124, 58, 237, 0.08);
+    box-shadow: 0 10px 28px -18px rgb(var(--shadow-tint) / 0.4);
   }
 
   .muted-card {
-    @apply rounded-3xl border;
+    @apply rounded-[1.75rem] border;
     border-color: var(--line);
     background: var(--surface-soft);
   }
@@ -92,12 +101,12 @@ body {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold transition-all duration-200;
     color: #ffffff;
     background: linear-gradient(135deg, var(--accent-grad-from) 0%, var(--accent-grad-to) 100%);
-    box-shadow: 0 8px 20px -4px rgba(124, 58, 237, 0.45);
+    box-shadow: 0 10px 22px -8px rgb(154 123 181 / 0.42);
   }
 
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 12px 24px -4px rgba(124, 58, 237, 0.55);
+    box-shadow: 0 14px 26px -8px rgb(154 123 181 / 0.5);
     filter: brightness(1.04);
   }
 
@@ -149,6 +158,11 @@ body {
     box-shadow: 0 0 0 4px var(--accent-soft);
   }
 
+  .field-label {
+    @apply text-sm font-medium;
+    color: var(--text-secondary);
+  }
+
   /* ─── Pill (tabs e chips) ─────────────────────────────────────────────── */
 
   .pill {
@@ -167,22 +181,26 @@ body {
     background: linear-gradient(135deg, var(--accent-grad-from), var(--accent-grad-to));
     color: #ffffff;
     border-color: transparent;
-    box-shadow: 0 4px 12px -3px rgba(124, 58, 237, 0.4);
+    box-shadow: 0 6px 14px -6px rgb(154 123 181 / 0.45);
   }
 
   /* ─── Typography ──────────────────────────────────────────────────────── */
 
   .title-display {
     color: var(--ink-strong);
-    letter-spacing: -0.02em;
-    font-family: var(--font-brand), "Times New Roman", serif;
-    font-weight: 600;
+    letter-spacing: -0.035em;
+    font-family: var(--font-brand);
+    font-weight: 800;
   }
 
   .brand-word {
-    font-family: "Panda Font", var(--font-brand), "Times New Roman", serif;
-    letter-spacing: -0.02em;
-    color: var(--accent-dark);
+    font-family: var(--font-brand);
+    font-weight: 800;
+    letter-spacing: -0.045em;
+    background: linear-gradient(135deg, #d4a088 0%, #c4a0b4 48%, #9a7bb5 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
 
   .text-body-secondary {
@@ -200,7 +218,7 @@ body {
 
   .text-link-accent:hover {
     text-decoration-line: underline;
-    filter: brightness(1.1);
+    filter: brightness(1.08);
   }
 
   /* ─── Callouts ────────────────────────────────────────────────────────── */
@@ -245,8 +263,15 @@ body {
       color: #bbf7d0;
     }
 
-    .elevated-card {
-      box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.4);
+    .elevated-card,
+    .hero-shell {
+      box-shadow: 0 8px 28px -16px rgba(0, 0, 0, 0.5);
+    }
+
+    .brand-word {
+      background: linear-gradient(135deg, #e8c4b0 0%, #d4b0c0 48%, #c4b0e0 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
     }
   }
 }

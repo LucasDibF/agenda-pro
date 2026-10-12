@@ -123,52 +123,52 @@ export function BlockedTimesManager() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-neutral-200 bg-white p-6">
-        <p className="text-sm text-neutral-600">Carregando bloqueios...</p>
+      <div className="elevated-card p-6">
+        <p className="text-sm text-body-secondary">Carregando bloqueios...</p>
       </div>
     );
   }
 
   return (
     <section className="space-y-6">
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-neutral-900">
+      <div className="elevated-card p-5">
+        <h2 className="title-display text-lg">
           Bloquear horarios ou dias especificos
         </h2>
-        <p className="mt-1 text-sm text-neutral-600">
+        <p className="mt-1 text-sm text-body-secondary">
           Use para folgas, feriados, compromissos ou pausas fora da rotina.
         </p>
 
         <form onSubmit={handleCreateBlockedTime} className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Inicio do bloqueio</span>
+            <span className="field-label">Inicio do bloqueio</span>
             <input
               type="datetime-local"
               value={form.startAt}
               onChange={(event) => setForm((prev) => ({ ...prev, startAt: event.target.value }))}
               required
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             />
           </label>
 
           <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Fim do bloqueio</span>
+            <span className="field-label">Fim do bloqueio</span>
             <input
               type="datetime-local"
               value={form.endAt}
               onChange={(event) => setForm((prev) => ({ ...prev, endAt: event.target.value }))}
               required
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
             />
           </label>
 
           <label className="space-y-1 md:col-span-2">
-            <span className="text-sm font-medium text-neutral-700">Motivo (opcional)</span>
+            <span className="field-label">Motivo (opcional)</span>
             <input
               type="text"
               value={form.reason}
               onChange={(event) => setForm((prev) => ({ ...prev, reason: event.target.value }))}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-pink-300 focus:ring"
+              className="input-shell"
               placeholder="Ex: Feriado, viagem, almoco..."
             />
           </label>
@@ -188,31 +188,31 @@ export function BlockedTimesManager() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-neutral-900 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-70 md:col-span-2"
+            className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-70 md:col-span-2"
           >
             {submitting ? "Salvando..." : "Adicionar bloqueio"}
           </button>
         </form>
       </div>
 
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-neutral-900">Bloqueios cadastrados</h2>
+      <div className="elevated-card p-5">
+        <h2 className="title-display text-lg">Bloqueios cadastrados</h2>
 
         {blockedRows.length === 0 ? (
-          <p className="mt-4 text-sm text-neutral-600">Nenhum bloqueio cadastrado ainda.</p>
+          <p className="mt-4 text-sm text-body-secondary">Nenhum bloqueio cadastrado ainda.</p>
         ) : (
           <div className="mt-4 space-y-3">
             {blockedRows.map((row) => (
               <article
                 key={row.id}
-                className="rounded-lg border border-neutral-200 bg-neutral-50 p-4"
+                className="muted-card p-4"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="font-semibold text-neutral-900">
+                    <p className="font-semibold text-[var(--ink-strong)]">
                       {formatDateTime(row.start_at)} - {formatDateTime(row.end_at)}
                     </p>
-                    <p className="text-sm text-neutral-600">
+                    <p className="text-sm text-body-secondary">
                       {row.reason ? row.reason : "Sem motivo informado."}
                     </p>
                   </div>

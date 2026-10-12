@@ -1,6 +1,6 @@
-# Agenda Online — app para profissional
+# Lillo — app para profissional
 
-Aplicativo mobile da área da profissional (Expo); usa o mesmo backend Supabase da aplicação web.
+Aplicativo mobile do Lillo (Expo); usa o mesmo backend Supabase da aplicação web.
 
 ## Stack
 

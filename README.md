@@ -1,6 +1,6 @@
-# Agenda (monorepo local)
+# Lillo
 
-Dois apps separados neste repositório:
+Dois apps do Lillo neste repositório:
 
 | Pasta | Descrição |
 |-------|-----------|

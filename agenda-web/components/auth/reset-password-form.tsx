@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AuthMotion } from "@/components/motion/auth-motion";
+import { FadeIn, MotionAlert, PopIn } from "@/components/motion/primitives";
+import { BrandMark } from "@/components/brand/brand-mark";
 import { supabase } from "@/lib/supabase/client";
 import { validatePassword } from "@/lib/utils/password";
 
@@ -82,7 +85,9 @@ export function ResetPasswordForm() {
   if (checkingSession) {
     return (
       <main className="page-shell flex min-h-[50vh] items-center justify-center">
-        <p className="text-sm text-[#6E7380]">Validando link de recuperacao...</p>
+        <FadeIn>
+          <p className="text-sm text-body-secondary">Validando link de recuperacao...</p>
+        </FadeIn>
       </main>
     );
   }
@@ -91,13 +96,18 @@ export function ResetPasswordForm() {
     return (
       <main className="page-shell">
         <section className="mx-auto flex max-w-md flex-col gap-6 px-6 py-16 text-center">
-          <h1 className="title-display text-2xl font-bold">Link invalido ou expirado</h1>
-          <p className="text-sm text-[#6E7380]">
-            Solicite um novo link de recuperacao de senha.
-          </p>
-          <Link href="/forgot-password" className="btn-primary mx-auto px-5 py-2.5 text-sm">
-            Solicitar novo link
-          </Link>
+          <PopIn>
+            <div className="mb-4 flex justify-center">
+              <BrandMark size="sm" />
+            </div>
+            <h1 className="title-display text-2xl font-bold">Link invalido ou expirado</h1>
+            <p className="mt-3 text-sm text-body-secondary">
+              Solicite um novo link de recuperacao de senha.
+            </p>
+            <Link href="/forgot-password" className="btn-primary mx-auto mt-6 px-5 py-2.5 text-sm">
+              Solicitar novo link
+            </Link>
+          </PopIn>
         </section>
       </main>
     );
@@ -106,16 +116,20 @@ export function ResetPasswordForm() {
   return (
     <main className="page-shell">
       <section className="mx-auto flex max-w-md flex-col gap-6 px-6 py-16">
-        <div className="space-y-2">
-          <h1 className="title-display text-3xl font-bold">Nova senha</h1>
-          <p className="text-sm text-[#6E7380]">
-            Escolha uma senha forte para acessar o painel da profissional.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="elevated-card space-y-4 p-5">
+        <AuthMotion
+          header={
+            <>
+              <BrandMark size="sm" />
+              <h1 className="title-display text-3xl">Nova senha</h1>
+              <p className="text-sm text-body-secondary">
+                Escolha uma senha forte para acessar o painel da profissional.
+              </p>
+            </>
+          }
+          card={
+            <form onSubmit={handleSubmit} className="elevated-card space-y-4 p-5">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#6E7380]">Nova senha</span>
+            <span className="text-sm font-medium text-body-secondary">Nova senha</span>
             <input
               type="password"
               value={password}
@@ -129,7 +143,7 @@ export function ResetPasswordForm() {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-[#6E7380]">Confirmar nova senha</span>
+            <span className="text-sm font-medium text-body-secondary">Confirmar nova senha</span>
             <input
               type="password"
               value={confirmPassword}
@@ -143,7 +157,9 @@ export function ResetPasswordForm() {
           </label>
 
           {errorMessage ? (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{errorMessage}</p>
+            <MotionAlert className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+              {errorMessage}
+            </MotionAlert>
           ) : null}
 
           <button
@@ -153,7 +169,9 @@ export function ResetPasswordForm() {
           >
             {loading ? "Salvando..." : "Salvar nova senha"}
           </button>
-        </form>
+            </form>
+          }
+        />
       </section>
     </main>
   );

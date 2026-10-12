@@ -109,18 +109,26 @@ export function generateSlots({
   const isToday = selectedDate === toLocalDateInput(now);
   const dayStart = dayStartMs(selectedDate);
   const slots: SlotOption[] = [];
+  const durationMs = Math.max(serviceDurationMinutes, 1) * 60_000;
+  const maxSlotsPerWindow = 24 * 60;
 
   for (const row of dayAvailability) {
     const startWindow = combineDateAndTime(selectedDate, row.start_time);
     const endWindow = combineDateAndTime(selectedDate, row.end_time);
+    if (Number.isNaN(startWindow.getTime()) || Number.isNaN(endWindow.getTime())) continue;
+
     const stepMs = Math.max(serviceDurationMinutes + row.slot_interval_minutes, 1) * 60_000;
 
     let cursor = new Date(startWindow);
-    while (true) {
+    let guard = 0;
+    while (guard < maxSlotsPerWindow) {
+      guard += 1;
       const slotStart = new Date(cursor);
-      const slotEnd = new Date(slotStart.getTime() + serviceDurationMinutes * 60_000);
+      const slotEnd = new Date(slotStart.getTime() + durationMs);
 
-      if (slotEnd > endWindow) break;
+      if (Number.isNaN(slotStart.getTime()) || Number.isNaN(slotEnd.getTime()) || slotEnd > endWindow) {
+        break;
+      }
 
       if (isToday && slotStart <= now) {
         cursor = new Date(cursor.getTime() + stepMs);

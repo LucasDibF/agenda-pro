@@ -1,4 +1,4 @@
-# Wiki do Produto - Agenda SaaS
+# Wiki do Produto — Lillo
 
 > Hub de produto para visão de negócio, posicionamento e evolução.
 

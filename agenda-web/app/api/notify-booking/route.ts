@@ -20,17 +20,31 @@ function isAuthorized(request: Request): boolean {
   return headerSecret === secret;
 }
 
+function tooMany(retryAfterSec: number) {
+  return NextResponse.json(
+    { error: "Muitas requisicoes. Tente novamente em breve." },
+    { status: 429, headers: { "Retry-After": String(retryAfterSec) } },
+  );
+}
+
 export async function POST(request: Request) {
   const ip = getClientIp(request);
-  const rate = checkRateLimit(`notify-booking:${ip}`, 10, 60_000);
-  if (!rate.ok) {
-    return NextResponse.json(
-      { error: "Muitas requisicoes. Tente novamente em breve." },
-      { status: 429, headers: { "Retry-After": String(rate.retryAfterSec) } },
-    );
-  }
+  const rate = checkRateLimit(`notify-booking:${ip}`, {
+    limit: 30,
+    windowMs: 60_000,
+    scope: "notify-booking",
+    globalLimit: 150,
+  });
+  if (!rate.ok) return tooMany(rate.retryAfterSec);
 
   if (!isAuthorized(request)) {
+    const brute = checkRateLimit(`notify-booking-auth:${ip}`, {
+      limit: 5,
+      windowMs: 10 * 60_000,
+      scope: "notify-booking-auth",
+      globalLimit: 60,
+    });
+    if (!brute.ok) return tooMany(brute.retryAfterSec);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

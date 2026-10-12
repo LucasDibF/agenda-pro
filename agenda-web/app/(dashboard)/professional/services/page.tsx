@@ -1,14 +1,15 @@
+import { FadeIn } from "@/components/motion/primitives";
 import { ServicesManager } from "@/components/professional/services-manager";
 
 export default function ProfessionalServicesPage() {
   return (
     <section className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-neutral-900">Serviços</h1>
-        <p className="text-neutral-600">
+      <FadeIn>
+        <h1 className="title-display text-2xl">Serviços</h1>
+        <p className="text-body-secondary">
           Cadastre e gerencie os serviços que serao exibidos para suas clientes.
         </p>
-      </div>
+      </FadeIn>
       <ServicesManager />
     </section>
   );

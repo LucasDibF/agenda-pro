@@ -14,6 +14,7 @@
 
 # next.js
 /.next/
+/.next.nosync/
 /out/
 
 # production
@@ -38,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# vault local (nao deve entrar no watcher/git do app)
+/docs/obsidian/
+/node_modules.icloud-stale/

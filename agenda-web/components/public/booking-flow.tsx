@@ -148,13 +148,14 @@ function getServiceInitial(name: string): string {
 
 /**
  * Gera um gradient determinístico baseado no nome (para o avatar do serviço).
- * Sempre na faixa lavanda/roxo — combina com o resto do app.
+ * Sempre na faixa champagne → lavanda — combina com a identidade Lillo.
  */
 function getServiceAvatarStyle(name: string): React.CSSProperties {
   const hash = Array.from(name).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  const hue = 260 + (hash % 40); // 260–300 (violet → fuchsia)
+  const hue = 20 + (hash % 50); // 20–70 (peach → rose) shifting toward lavender
+  const hueTo = 280 + (hash % 30);
   return {
-    background: `linear-gradient(135deg, hsl(${hue}, 80%, 75%) 0%, hsl(${hue - 20}, 70%, 55%) 100%)`,
+    background: `linear-gradient(135deg, hsl(${hue}, 42%, 72%) 0%, hsl(${hueTo}, 28%, 62%) 100%)`,
   };
 }
 

@@ -265,35 +265,35 @@ export function ServicesManager() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-neutral-200 bg-white p-6">
-        <p className="text-sm text-neutral-600">Carregando serviços...</p>
+      <div className="elevated-card p-6">
+        <p className="text-sm text-body-secondary">Carregando serviços...</p>
       </div>
     );
   }
 
   return (
     <section className="space-y-6">
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
-        <h2 className="text-lg font-semibold text-neutral-900">Novo serviço</h2>
-        <p className="mt-1 text-sm text-neutral-600">
+      <div className="elevated-card p-5">
+        <h2 className="title-display text-lg">Novo serviço</h2>
+        <p className="mt-1 text-sm text-body-secondary">
           Cadastre nome, duração, valor, descrição e uma foto opcional.
         </p>
 
         <form onSubmit={handleCreateService} className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="space-y-1 md:col-span-2">
-            <span className="text-sm font-medium text-neutral-700">Nome do serviço</span>
+            <span className="field-label">Nome do serviço</span>
             <input
               type="text"
               value={form.name}
               onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
               required
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-violet-300 focus:ring"
+              className="input-shell"
               placeholder="Ex: Manicure completa"
             />
           </label>
 
           <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Duração (minutos)</span>
+            <span className="field-label">Duração (minutos)</span>
             <input
               type="number"
               min={1}
@@ -303,12 +303,12 @@ export function ServicesManager() {
                 setForm((prev) => ({ ...prev, durationMinutes: event.target.value }))
               }
               required
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-violet-300 focus:ring"
+              className="input-shell"
             />
           </label>
 
           <label className="space-y-1">
-            <span className="text-sm font-medium text-neutral-700">Valor (R$)</span>
+            <span className="field-label">Valor (R$)</span>
             <input
               type="number"
               min={0}
@@ -316,34 +316,34 @@ export function ServicesManager() {
               value={form.price}
               onChange={(event) => setForm((prev) => ({ ...prev, price: event.target.value }))}
               required
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-violet-300 focus:ring"
+              className="input-shell"
               placeholder="150.00"
             />
           </label>
 
           <label className="space-y-1 md:col-span-2">
-            <span className="text-sm font-medium text-neutral-700">Descrição</span>
+            <span className="field-label">Descrição</span>
             <textarea
               value={form.description}
               onChange={(event) =>
                 setForm((prev) => ({ ...prev, description: event.target.value }))
               }
               rows={3}
-              className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none ring-violet-300 focus:ring"
+              className="input-shell"
               placeholder="Detalhes do atendimento, materiais, orientações..."
             />
           </label>
 
           {/* Upload de imagem */}
           <div className="md:col-span-2">
-            <span className="text-sm font-medium text-neutral-700">Foto do serviço (opcional)</span>
+            <span className="field-label">Foto do serviço (opcional)</span>
             <div className="mt-1.5 flex items-center gap-3">
-              <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-neutral-50">
+              <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface-soft)]">
                 {pendingPreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={pendingPreview} alt="Pré-visualização" className="h-full w-full object-cover" />
                 ) : (
-                  <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-neutral-400">
+                  <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-[var(--text-muted)]">
                     <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
                     <circle cx="9" cy="11" r="2" stroke="currentColor" strokeWidth="1.6" />
                     <path d="M3 17l5-4 4 3 4-5 5 5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
@@ -356,18 +356,18 @@ export function ServicesManager() {
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif"
                   onChange={handlePickImage}
-                  className="block text-xs text-neutral-700 file:mr-3 file:rounded-lg file:border-0 file:bg-violet-100 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-violet-700 hover:file:bg-violet-200"
+                  className="block text-xs text-body-secondary file:mr-3 file:rounded-full file:border-0 file:bg-[var(--accent-soft)] file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-[var(--accent-dark)] hover:file:bg-[var(--accent-softer)]"
                 />
                 {pendingImage ? (
                   <button
                     type="button"
                     onClick={clearPendingImage}
-                    className="self-start text-xs font-semibold text-neutral-500 hover:text-neutral-700 hover:underline"
+                    className="self-start text-xs font-semibold text-body-muted hover:text-[var(--ink-strong)] hover:underline"
                   >
                     Remover seleção
                   </button>
                 ) : (
-                  <p className="text-xs text-neutral-500">JPG, PNG ou WebP — até 5 MB.</p>
+                  <p className="text-xs text-body-muted">JPG, PNG ou WebP — até 5 MB.</p>
                 )}
               </div>
             </div>
@@ -388,29 +388,29 @@ export function ServicesManager() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-violet-200 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60 md:col-span-2"
+            className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60 md:col-span-2"
           >
             {submitting ? "Salvando..." : "Cadastrar serviço"}
           </button>
         </form>
       </div>
 
-      <div className="rounded-xl border border-neutral-200 bg-white p-5">
+      <div className="elevated-card p-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-neutral-900">Serviços cadastrados</h2>
-          <span className="text-sm text-neutral-500">
+          <h2 className="title-display text-lg">Serviços cadastrados</h2>
+          <span className="text-sm text-body-muted">
             {activeCount} ativos de {services.length}
           </span>
         </div>
 
         {services.length === 0 ? (
-          <p className="mt-4 text-sm text-neutral-600">Nenhum serviço cadastrado ainda.</p>
+          <p className="mt-4 text-sm text-body-secondary">Nenhum serviço cadastrado ainda.</p>
         ) : (
           <div className="mt-4 space-y-3">
             {services.map((service) => (
               <article
                 key={service.id}
-                className="flex gap-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4"
+                className="muted-card flex gap-4 p-4"
               >
                 {/* Thumb / upload */}
                 <ServiceImageSlot
@@ -422,13 +422,13 @@ export function ServicesManager() {
 
                 <div className="flex flex-1 flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-neutral-900">{service.name}</h3>
-                    <p className="text-sm text-neutral-600">
+                    <h3 className="font-semibold text-[var(--ink-strong)]">{service.name}</h3>
+                    <p className="text-sm text-body-secondary">
                       {service.duration_minutes} min • R${" "}
                       {Number(service.price).toFixed(2).replace(".", ",")}
                     </p>
                     {service.description ? (
-                      <p className="text-sm text-neutral-500">{service.description}</p>
+                      <p className="text-sm text-body-muted">{service.description}</p>
                     ) : null}
                   </div>
 
@@ -436,7 +436,7 @@ export function ServicesManager() {
                     <button
                       type="button"
                       onClick={() => handleToggleActive(service)}
-                      className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-100"
+                      className="btn-soft px-3 py-2 text-xs"
                     >
                       {service.is_active ? "Desativar" : "Ativar"}
                     </button>
@@ -477,7 +477,7 @@ function ServiceImageSlot({
   return (
     <div className="flex flex-col items-center gap-1">
       <label
-        className="relative flex h-20 w-20 flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-sm transition hover:border-violet-400"
+        className="relative flex h-20 w-20 flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--surface)] shadow-sm transition hover:border-[var(--accent)]"
         aria-label="Trocar imagem do serviço"
       >
         {service.image_url ? (
@@ -490,7 +490,7 @@ function ServiceImageSlot({
             unoptimized
           />
         ) : (
-          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-neutral-400">
+          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-[var(--text-muted)]">
             <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
             <circle cx="9" cy="11" r="2" stroke="currentColor" strokeWidth="1.6" />
             <path d="M3 17l5-4 4 3 4-5 5 5" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
@@ -498,7 +498,7 @@ function ServiceImageSlot({
         )}
 
         {busy ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-white/70 text-xs font-semibold text-violet-700">
+          <div className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_oklab,var(--surface)_70%,transparent)] text-xs font-semibold text-[var(--accent-dark)]">
             …
           </div>
         ) : null}
@@ -521,12 +521,12 @@ function ServiceImageSlot({
           type="button"
           onClick={onRemove}
           disabled={busy}
-          className="text-[0.65rem] font-semibold text-neutral-500 hover:text-red-600 disabled:opacity-50"
+          className="text-[0.65rem] font-semibold text-body-muted hover:text-red-600 disabled:opacity-50"
         >
           Remover
         </button>
       ) : (
-        <span className="text-[0.65rem] text-neutral-500">Adicionar</span>
+        <span className="text-[0.65rem] text-body-muted">Adicionar</span>
       )}
     </div>
   );
