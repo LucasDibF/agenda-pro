@@ -6,8 +6,8 @@ import { motion, useReducedMotion } from "framer-motion";
 
 const links = [
   { href: "/professional", label: "Dashboard", exact: true },
-  { href: "/professional/services", label: "Serviços" },
-  { href: "/professional/calendar", label: "Agenda" },
+  { href: "/professional/services", label: "Serviços", exact: false },
+  { href: "/professional/calendar", label: "Agenda", exact: false },
 ] as const;
 
 export function ProfessionalNav() {
